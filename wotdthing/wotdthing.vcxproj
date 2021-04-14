@@ -151,12 +151,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="wotdthing.cpp" />
+    <ClCompile Include="Tests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BitUtils.h" />
     <ClInclude Include="BitUtils2.h" />
-    <ClInclude Include="Tests.h" />
     <ClInclude Include="UBigInt.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

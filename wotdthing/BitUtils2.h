@@ -54,10 +54,10 @@ template <
 	const std::size_t _n,
 	const std::size_t start_bit = 0,
 	const std::size_t end_bit = _n,
-	typename = std::enable_if_t < (_n > 0) >,
-	typename = std::enable_if_t < (start_bit < _n) >,
-	typename = std::enable_if_t< (end_bit <= _n) >,
-	typename = std::enable_if_t< (start_bit < end_bit) >
+	std::enable_if_t < (_n > 0) , bool > = true,
+	std::enable_if_t < (start_bit < _n) , bool > = true,
+	std::enable_if_t < (end_bit <= _n) , bool > = true,
+	std::enable_if_t < (start_bit < end_bit) , bool > = true
 >
 class BitUtils {
 #define _BITUTILS_IS_LITTLE_ENDIAN (1 << 1) > 1
@@ -78,9 +78,9 @@ public:
 	template <
 		const std::size_t start,
 		const std::size_t end,
-		typename = std::enable_if_t < (start < n) >,
-		typename = std::enable_if_t < (end <= n) >,
-		typename = std::enable_if_t < (start < end) >
+		std::enable_if_t < (start < n) , bool > = true,
+		std::enable_if_t < (end <= n) , bool > = true,
+		std::enable_if_t < (start < end) , bool > = true
 	>
 	using bound = BitUtils<size * CHAR_SIZE, start, end>;
 
@@ -289,8 +289,8 @@ public:
 	template <
 		class BitUtils_src = BitUtils,
 		class BitUtils_dst = BitUtils,
-		typename = std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_src> >,
-		typename = std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst> >
+		std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_src> , bool > = true,
+		std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst> , bool > = true
 	>
 	static void copy(const void* const src, void* const dst) {
 		if (src == dst)
@@ -323,9 +323,9 @@ public:
 		class BitUtils_left = BitUtils,
 		class BitUtils_right = BitUtils,
 		class BitUtils_dst = BitUtils,
-		typename = std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_left> >,
-		typename = std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_right> >,
-		typename = std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst> >
+		std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_left> , bool > = true,
+		std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_right> , bool > = true,
+		std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst> , bool > = true
 	>
 	static void bitwise_and(const void* const left, const void* const right, void* const dst) {
 		if (left == right) {
@@ -352,9 +352,9 @@ public:
 		class BitUtils_left = BitUtils,
 		class BitUtils_right = BitUtils,
 		class BitUtils_dst = BitUtils,
-		typename = std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_left> >,
-		typename = std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_right> >,
-		typename = std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst> >
+		std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_left> , bool > = true,
+		std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_right> , bool > = true,
+		std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst> , bool > = true
 	>
 	static void bitwise_or(const void* const left, const void* const right, void* const dst) {
 		if (left == right) {
@@ -379,9 +379,9 @@ public:
 		class BitUtils_left = BitUtils,
 		class BitUtils_right = BitUtils,
 		class BitUtils_dst = BitUtils,
-		typename = std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_left> >,
-		typename = std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_right> >,
-		typename = std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst> >
+		std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_left> , bool > = true,
+		std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_right> , bool > = true,
+		std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst> , bool > = true
 	>
 	static void bitwise_xor(const void* const left, const void* const right, void* const dst) {
 		if (left == right) {
@@ -403,8 +403,8 @@ public:
 	template <
 		class BitUtils_src = BitUtils,
 		class BitUtils_dst = BitUtils,
-		typename = std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_src> >,
-		typename = std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst> >
+		std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_src> , bool > = true,
+		std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst> , bool > = true
 	>
 	static void bitwise_not(const void* const src, void* const dst) {
 		if (src != dst)
@@ -460,8 +460,8 @@ public:
 	template <
 		class BitUtils_left = BitUtils,
 		class BitUtils_right = BitUtils,
-		typename = std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_left> >,
-		typename = std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_right> >
+		std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_left> , bool > = true,
+		std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_right> , bool > = true
 	>
 	static bool equals(const void* const left, const void* const right) {
 		for (std::size_t i = 0; i < size; i++) {
@@ -614,11 +614,11 @@ public:
 		const std::size_t other_n,
 		const std::size_t other_start_bit = 0,
 		const std::size_t other_end_bit = other_n,
-		typename = std::enable_if_t < (other_n > 0) >,
-		typename = std::enable_if_t < (other_start_bit < other_n) >,
-		typename = std::enable_if_t < (other_end_bit <= other_n) >,
-		typename = std::enable_if_t < (other_start_bit < other_end_bit) >,
-		typename = std::enable_if_t < (other_end_bit - other_start_bit) >= n >
+		std::enable_if_t < (other_n > 0) , bool > = true,
+		std::enable_if_t < (other_start_bit < other_n) , bool > = true,
+		std::enable_if_t < (other_end_bit <= other_n) , bool > = true,
+		std::enable_if_t < (other_start_bit < other_end_bit) , bool > = true,
+		std::enable_if_t < (other_end_bit - other_start_bit) >= n , bool > = true
 	>
 	operator BitUtils<other_n, other_start_bit, other_end_bit>() const {
 		return BitUtils<other_n, other_start_bit, other_end_bit>();

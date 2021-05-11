@@ -8,7 +8,10 @@
 * inefficiencies. I tried to treat it as if it were a piece of professional work just as practice
 * for when I actually do programming professionally.
 * 
-* Requires the C++17 language standard.
+* Targeted the C++17 language standard.
+* 
+* You might have to change some things if you aren't using Visual C++. I tried to do some preprocessor
+* stuff to make it more flexible, but I haven't tested this on Linux.
 */
 
 #ifndef BITUTILS2_H
@@ -25,6 +28,14 @@
 #include <sstream>
 #include <functional>
 #include <type_traits>
+
+#ifdef CHAR_BIT
+constexpr const std::size_t CHAR_SIZE = CHAR_BIT;
+#else
+#ifdef __CHAR_BIT__
+constexpr const std::size_t CHAR_SIZE = __CHAR_BIT__;
+#endif // __CHAR_BIT__
+#endif // CHAR_BIT
 
 /// <summary>
 /// A class comprised mainly of static functions used for manipulating memory blocks as if they
@@ -52,7 +63,7 @@ class BitUtils {
 #define _BITUTILS_IS_LITTLE_ENDIAN (1 << 1) > 1
 public:
 	constexpr static const std::size_t n = end_bit - start_bit; // The number of bits we're working with.
-	constexpr static const std::size_t size = (_n <= CHAR_BIT ? 1 : (_n / CHAR_BIT) + bool(_n % CHAR_BIT)); // The number of bytes that would be allocated.
+	constexpr static const std::size_t size = (_n <= CHAR_SIZE ? 1 : (_n / CHAR_SIZE) + bool(_n % CHAR_SIZE)); // The number of bytes that would be allocated.
 	constexpr static const std::size_t start_bit = start_bit; // The index of the bit to start on (inclusive).
 	constexpr static const std::size_t end_bit = end_bit; // The index of the bit to end on (exclusive).
 
@@ -71,54 +82,54 @@ public:
 		typename = std::enable_if_t < (end <= n) >,
 		typename = std::enable_if_t < (start < end) >
 	>
-	using bound = BitUtils<size * CHAR_BIT, start, end>;
+	using bound = BitUtils<size * CHAR_SIZE, start, end>;
 
 	/* A typedef that removes all bounds for the BitUtils. 
 	It guarantees 2 things:
 	* the resulting type's n value will be a log of 2.
 	* the safe versions of functions (where available) are not forcibly used.
 	*/
-	using unbound = BitUtils<size * CHAR_BIT>;
+	using unbound = BitUtils<size * CHAR_SIZE>;
 
 	/* A typedef that, given a type, makes an unbounded BitUtils class that accomodates for its size. */
 	template <
 		class Type
 	>
-	using of = BitUtils<sizeof(Type) * CHAR_BIT>;
+	using of = BitUtils<sizeof(Type) * CHAR_SIZE>;
 	
 
 	// ========== FUNCTIONS ==========
 
 	static char* const getPage(void* const arr_ptr, std::size_t i) {
 		if constexpr (_n == n) {
-			if (i > size * CHAR_BIT)
+			if (i > size * CHAR_SIZE)
 				throw std::out_of_range("");
 		}
 		else {
-			if (i > n)
+			if (i >= n)
 				throw std::out_of_range("");
 		}
-
+		
 		if constexpr (size == 1)
 			return (char*)arr_ptr;
 		else {
-			return ((char*)(arr_ptr)+((i + start_bit) / CHAR_BIT));
+			return (char*)arr_ptr + ((i + start_bit) / CHAR_SIZE);
 		}
 	}
 	static const char* const getPage(const void* const arr_ptr, std::size_t i) {
 		if constexpr (n == _n) {
-			if (i > size * CHAR_BIT)
+			if (i > size * CHAR_SIZE)
 				throw std::out_of_range("");
 		}
 		else {
-			if (i > n)
+			if (i >= n)
 				throw std::out_of_range("");
 		}
 
 		if constexpr (size == 1)
 			return (char*)arr_ptr;
 		else {
-			return ((char*)(arr_ptr)+((i + start_bit) / CHAR_BIT));
+			return (char*)arr_ptr + ((i + start_bit) / CHAR_SIZE);
 		}
 	}
 
@@ -130,9 +141,9 @@ public:
 	/// <returns>true if the bit is 1 and false if the bit 0.</returns>
 	static bool get(const void* const src, std::size_t i) {
 		if constexpr (_BITUTILS_IS_LITTLE_ENDIAN)
-			return *getPage(src, i) & ((std::size_t)1 << ((i + start_bit) % CHAR_BIT));
+			return *getPage(src, i) & ((std::size_t)1 << ((i + start_bit) % CHAR_SIZE));
 		else
-			return *getPage(src, i) & ((std::size_t)1 >> ((i + start_bit) % CHAR_BIT));
+			return *getPage(src, i) & ((std::size_t)1 >> ((i + start_bit) % CHAR_SIZE));
 	}
 
 	/// <summary>
@@ -142,9 +153,9 @@ public:
 	/// <param name="i">the index of the bit to flip.</param>
 	static void flip(void* const src, std::size_t i) {
 		if constexpr (_BITUTILS_IS_LITTLE_ENDIAN)
-			*getPage(src, i) ^= ((std::size_t)1 << ((i + start_bit) % CHAR_BIT));
+			*getPage(src, i) ^= ((std::size_t)1 << ((i + start_bit) % CHAR_SIZE));
 		else
-			*getPage(src, i) ^= ((std::size_t)1 >> ((i + start_bit) % CHAR_BIT));
+			*getPage(src, i) ^= ((std::size_t)1 >> ((i + start_bit) % CHAR_SIZE));
 	}
 
 	/* Sets the designated bit to reflect the supplied boolean.
@@ -162,9 +173,9 @@ public:
 	/// <param name="b">the boolean that reflects what to set the bit to (ie 1 for true and 0 for false).</param>
 	static void set(void* const src, std::size_t i, bool b) {
 		if constexpr (_BITUTILS_IS_LITTLE_ENDIAN)
-			*getPage(src, i) |= ((std::size_t)1 << ((i + start_bit) % CHAR_BIT));
+			*getPage(src, i) |= ((std::size_t)1 << ((i + start_bit) % CHAR_SIZE));
 		else
-			*getPage(src, i) |= ((std::size_t)1 >> ((i + start_bit) % CHAR_BIT));
+			*getPage(src, i) |= ((std::size_t)1 >> ((i + start_bit) % CHAR_SIZE));
 
 		// Flipping the bit if user wants it to be false
 		if (!b)
@@ -189,7 +200,7 @@ public:
 	static void fill(void* const src, bool b) {
 		if constexpr (n != _n)
 			fill_s(src, b);
-		else if constexpr (n == CHAR_BIT)
+		else if constexpr (n == CHAR_SIZE)
 			*((unsigned char*)src) = b ? -1 : 0;
 		else
 			memset(src, b ? (unsigned char)-1 : 0, size);
@@ -208,9 +219,9 @@ public:
 	/// <param name="b">the boolean that reflects what to fill the memory block with (ie 1 for true and 0 for false).</param>
 	static void fill_s(void* const src, bool b) {
 		if constexpr (_n != n) {
-			if constexpr (n < CHAR_BIT) {
+			if constexpr (n < CHAR_SIZE) {
 				char* page = getPage(src, start_bit);
-				using PageUtils = BitUtils<n, start_bit % CHAR_BIT, (CHAR_BIT <= n ? CHAR_BIT : (end_bit % CHAR_BIT)) >;
+				using PageUtils = BitUtils<n, start_bit % CHAR_SIZE, (CHAR_SIZE <= n ? CHAR_SIZE : (end_bit % CHAR_SIZE)) >;
 
 				for (std::size_t i = 0; i < PageUtils::n; i++) {
 					PageUtils::set(page, i, b);
@@ -220,7 +231,7 @@ public:
 				char* page;
 				if constexpr (start_bit) {
 					page = getPage(src, start_bit);
-					using StartPageUtils = BitUtils<CHAR_BIT, start_bit % CHAR_BIT>;
+					using StartPageUtils = BitUtils<CHAR_SIZE, start_bit % CHAR_SIZE>;
 
 					for (std::size_t i = 0; i < StartPageUtils::n; i++) {
 						StartPageUtils::set(page, i, b);
@@ -230,10 +241,10 @@ public:
 				page = getPage(src, start_bit);
 				if constexpr (end_bit < _n) {
 					for (std::size_t i = 1; i < size - 1; i++) {
-						BitUtils<CHAR_BIT>::fill(page + i, b);
+						BitUtils<CHAR_SIZE>::fill(page + i, b);
 					}
 					page = getPage(src, end_bit - 1);
-					using EndPageUtils = BitUtils<CHAR_BIT, 0, end_bit % CHAR_BIT>;
+					using EndPageUtils = BitUtils<CHAR_SIZE, 0, end_bit % CHAR_SIZE>;
 
 					for (std::size_t i = 0; i < EndPageUtils::n; i++) {
 						EndPageUtils::set(page, i, b);
@@ -241,13 +252,13 @@ public:
 				}
 				else {
 					for (std::size_t i = 1; i < size; i++) {
-						BitUtils<CHAR_BIT>::fill(page + i, b);
+						BitUtils<CHAR_SIZE>::fill(page + i, b);
 					}
 				}
 			}
 		}
 		else {
-			if constexpr ((size * CHAR_BIT) == n) {
+			if constexpr ((size * CHAR_SIZE) == n) {
 				fill(src, b);
 			}
 			else {
@@ -284,18 +295,19 @@ public:
 	static void copy(const void* const src, void* const dst) {
 		if (src == dst)
 			return;
-#ifdef __STDC_LIB_EXT1__
 		if constexpr (std::is_same_v<BitUtils, BitUtils_dst> && std::is_same_v<BitUtils, BitUtils_src>) {
+#ifdef __STDC_LIB_EXT1__
 			memcpy_s(dst, size, src, size);
-		}
-		else {
-			BitUtils_dst::fill(dst, 0);
-			BitUtils_src::bitwise_or<BitUtils_src, BitUtils_dst, BitUtils_dst>(dst, src, dst);
-		}
+			return;
 #else
+#ifdef __GNUG__
+			memcpy(dst, src, size);
+			return;
+#endif // __GNUG__
+#endif // __STDC_LIB_EXT1__
+		}
 		BitUtils_dst::fill(dst, 0);
-		bitwise_or<BitUtils_dst, BitUtils_src, BitUtils_dst>(dst, src, dst);
-#endif
+		bitwise_or<BitUtils_src, BitUtils_dst, BitUtils_dst>(src, dst, dst);
 	}
 
 	/// <summary>
@@ -317,12 +329,12 @@ public:
 	>
 	static void bitwise_and(const void* const left, const void* const right, void* const dst) {
 		if (left == right) {
-			if (left == dst || right == dst)
+			if (left == dst)
 				return;
-			copy<BitUtils_dst, BitUtils_left>(left, dst);
+			copy<BitUtils_left, BitUtils_dst>(left, dst);
 			return;
 		}
-		for (std::size_t i = 0; i < n; i += CHAR_BIT) {
+		for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
 			*BitUtils_dst::getPage(dst, i) = *BitUtils_left::getPage(left, i) & *BitUtils_right::getPage(right, i);
 		}
 	}
@@ -349,7 +361,7 @@ public:
 			bitwise_and<BitUtils_left, BitUtils_right, BitUtils_dst>(left, right, dst);
 			return;
 		}
-		for (std::size_t i = 0; i < n; i += CHAR_BIT) {
+		for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
 			*BitUtils_dst::getPage(dst, i) = *BitUtils_left::getPage(left, i) | *BitUtils_right::getPage(right, i);
 		}
 	}
@@ -376,7 +388,7 @@ public:
 			BitUtils_dst::fill(dst, 0);
 			return;
 		}
-		for (std::size_t i = 0; i < n; i += CHAR_BIT) {
+		for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
 			*BitUtils_dst::getPage(dst, i) = *BitUtils_left::getPage(left, i) ^ *BitUtils_right::getPage(right, i);
 		}
 	}
@@ -397,7 +409,7 @@ public:
 	static void bitwise_not(const void* const src, void* const dst) {
 		if (src != dst)
 			copy<BitUtils_src, BitUtils_dst>(src, dst);
-		for (std::size_t i = 0; i < size * CHAR_BIT; i += CHAR_BIT) {
+		for (std::size_t i = 0; i < size * CHAR_SIZE; i += CHAR_SIZE) {
 			*BitUtils_dst::getPage(dst, i) = ~(*BitUtils_dst::getPage(dst, i));
 		}
 	}
@@ -420,7 +432,7 @@ public:
 		if constexpr (start_bit || end_bit != _n)
 			return bool_op_s(src);
 		else {
-			for (std::size_t i = 0; i < n; i += CHAR_BIT) {
+			for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
 				if (*getPage(src, i))
 					return true;
 			}
@@ -445,9 +457,15 @@ public:
 		}
 	}
 
+	template <
+		class BitUtils_left = BitUtils,
+		class BitUtils_right = BitUtils,
+		typename = std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_left> >,
+		typename = std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_right> >
+	>
 	static bool equals(const void* const left, const void* const right) {
 		for (std::size_t i = 0; i < size; i++) {
-			if (bool(*getPage(left, i *  CHAR_BIT)) != bool(*getPage(right, i * CHAR_BIT)))
+			if (bool(*getPage(left, i *  CHAR_SIZE)) != bool(*getPage(right, i * CHAR_SIZE)))
 				return false;
 		}
 		return true;
@@ -462,7 +480,7 @@ public:
 		buf[(n < strlen(buf) ? n : strlen(buf))] = '\0';
 	}
 
-	static void wstr(const void* const arr, wchar_t* const buf, std::size_t buf_n) {
+	static void wstr(const void* const arr, wchar_t* const buf, const std::size_t buf_n) {
 		if (!buf_n)
 			return;
 		for (std::size_t i = 0; i < (n < buf_n ? n : buf_n) - 1; i++) {
@@ -476,7 +494,7 @@ public:
 		if constexpr (n != _n)
 			count = n;
 		else
-			count = size * CHAR_BIT;
+			count = size * CHAR_SIZE;
 
 		for (std::size_t i = 0; i < count; i++) {
 			os << get(arr_ptr, i) ? '1' : '0';
@@ -503,26 +521,26 @@ public:
 	}
 
 	static void for_each_byte(void* const arr_ptr, void (*func)(char* pC)) {
-		for (std::size_t i = 0; i < n; i += CHAR_BIT) {
+		for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
 			func(getPage(arr_ptr, i));
 		}
 	}
 
 	static void for_each_byte(void* const arr_ptr, const std::function<void(char*)>& func) {
-		for (std::size_t i = 0; i < n; i += CHAR_BIT) {
+		for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
 			func(getPage(arr_ptr, i));
 		}
 	}
 
 	static void rfor_each_byte(void* const arr_ptr, void (*func)(char* pC)) {
-		for (std::size_t i = n; i > CHAR_BIT; i -= CHAR_BIT) {
+		for (std::size_t i = n; i > CHAR_SIZE; i -= CHAR_SIZE) {
 			func(getPage(arr_ptr, i));
 		}
 		func(getPage(arr_ptr, 0));
 	}
 
 	static void rfor_each_byte(void* const arr_ptr, std::function<void(char*)>& func) {
-		for (std::size_t i = n; i > CHAR_BIT; i -= CHAR_BIT) {
+		for (std::size_t i = n; i > CHAR_SIZE; i -= CHAR_SIZE) {
 			func(getPage(arr_ptr, i));
 		}
 		func(getPage(arr_ptr, 0));
@@ -530,56 +548,56 @@ public:
 
 	static void for_each_bit(const void* const arr_ptr, void (*func)(bool b)) {
 		const char* page;
-		for (std::size_t i = 0; i < n; i += CHAR_BIT) {
+		for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
 			page = getPage(arr_ptr, i);
-			for (std::size_t j = 0; j < CHAR_BIT; j++) {
-				func(BitUtils<CHAR_BIT>::get(page, j));
+			for (std::size_t j = 0; j < CHAR_SIZE; j++) {
+				func(BitUtils<CHAR_SIZE>::get(page, j));
 			}
 		}
 	}
 
 	static void for_each_bit(const void* const arr_ptr, std::function<void(bool)>& func) {
 		const char* page;
-		for (std::size_t i = 0; i < n; i += CHAR_BIT) {
+		for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
 			page = getPage(arr_ptr, i);
-			for (std::size_t j = 0; j < CHAR_BIT; j++) {
-				func(BitUtils<CHAR_BIT>::get(page, j));
+			for (std::size_t j = 0; j < CHAR_SIZE; j++) {
+				func(BitUtils<CHAR_SIZE>::get(page, j));
 			}
 		}
 	}
 
 	static void rfor_each_bit(const void* const arr_ptr, void (*func)(bool b)) {
 		const char* page;
-		for (std::size_t i = n; i > CHAR_BIT; i -= CHAR_BIT) {
+		for (std::size_t i = n; i > CHAR_SIZE; i -= CHAR_SIZE) {
 			page = getPage(arr_ptr, i);
-			for (std::size_t j = CHAR_BIT - 1; j > 0; j--) {
-				func(BitUtils<CHAR_BIT>::get(page, j));
+			for (std::size_t j = CHAR_SIZE - 1; j > 0; j--) {
+				func(BitUtils<CHAR_SIZE>::get(page, j));
 			}
-			func(BitUtils<CHAR_BIT>::get(page, 0));
+			func(BitUtils<CHAR_SIZE>::get(page, 0));
 		}
 
 		page = getPage(arr_ptr, 0);
-		for (std::size_t j = CHAR_BIT - 1; j > 0; j--) {
-			func(BitUtils<CHAR_BIT>::get(page, j));
+		for (std::size_t j = CHAR_SIZE - 1; j > 0; j--) {
+			func(BitUtils<CHAR_SIZE>::get(page, j));
 		}
-		func(BitUtils<CHAR_BIT>::get(page, 0));
+		func(BitUtils<CHAR_SIZE>::get(page, 0));
 	}
 
 	static void rfor_each_bit(const void* const arr_ptr, std::function<void(bool)>& func) {
 		const char* page;
-		for (std::size_t i = n; i > CHAR_BIT; i -= CHAR_BIT) {
+		for (std::size_t i = n; i > CHAR_SIZE; i -= CHAR_SIZE) {
 			page = getPage(arr_ptr, i);
-			for (std::size_t j = CHAR_BIT - 1; j > 0; j--) {
-				func(BitUtils<CHAR_BIT>::get(page, j));
+			for (std::size_t j = CHAR_SIZE - 1; j > 0; j--) {
+				func(BitUtils<CHAR_SIZE>::get(page, j));
 			}
-			func(BitUtils<CHAR_BIT>::get(page, 0));
+			func(BitUtils<CHAR_SIZE>::get(page, 0));
 		}
 
 		page = getPage(arr_ptr, 0);
-		for (std::size_t j = CHAR_BIT - 1; j > 0; j--) {
-			func(BitUtils<CHAR_BIT>::get(page, j));
+		for (std::size_t j = CHAR_SIZE - 1; j > 0; j--) {
+			func(BitUtils<CHAR_SIZE>::get(page, j));
 		}
-		func(BitUtils<CHAR_BIT>::get(page, 0));
+		func(BitUtils<CHAR_SIZE>::get(page, 0));
 	}
 
 	// =============================================

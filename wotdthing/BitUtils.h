@@ -335,7 +335,7 @@ namespace BitUtils {
 
 	bool equals(const void* left,
 		const void* const right,
-		const std::size_t n) { equals(left, n, 0, n, right, n, 0, n); }
+		const std::size_t n) { return equals(left, n, 0, n, right, n, 0, n); }
 
 	/* Puts a string representation of the binary of the memory block into the supplied buffer.
 	Bit 0 will always be the left most number regardless if the machine is big or little endian.

@@ -93,9 +93,9 @@ void BitUtils::set(void* const src,
 	_validateBounds(n, start_bit, end_bit, i);
 	// Setting the bit to true regardless of its state
 #if _BITUTILS_IS_LITTLE_ENDIAN
-	* getPage(src, n, start_bit, end_bit, i) |= ((std::size_t)1 << (i % CHAR_SIZE));
+	*getPage(src, n, start_bit, end_bit, i) |= ((std::size_t)1 << (i % CHAR_SIZE));
 #else
-	* getPage(src, n, start_bit, end_bit, i) |= ((std::size_t)1 >> (i % CHAR_SIZE));
+	*getPage(src, n, start_bit, end_bit, i) |= ((std::size_t)1 >> (i % CHAR_SIZE));
 #endif
 	// Flipping the bit if user wants it to be false
 	if (!b)

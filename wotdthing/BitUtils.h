@@ -26,6 +26,7 @@
 #include <iostream>
 #include <sstream>
 #include <functional>
+#include <type_traits>
 
 namespace BitUtils {
 	/* Calculates the size (in bytes) of a memory block that is size n (in bits)
@@ -523,138 +524,6 @@ namespace BitUtils {
 	Note that a reverse iteration can be achieved if begin > end.
 	*/
 	void for_each_bit(const void* const begin, const void* const end, std::function<void(bool)>& func);
-
-	// A class that encapsulates all the other functions in a single object if that's more your speed. I'd prefer the other functions tho.
-	template <
-		const std::size_t n, 
-		const std::size_t start_bit = 0,
-		const std::size_t end_bit = n,
-		typename = std::enable_if < (n > 0) >::type,
-		typename = std::enable_if < (start_bit < end_bit) >::type,
-		typename = std::enable_if < (end_bit <= n) >::type
-	>
-	class BitArray {
-		void* data;
-	public:
-
-		BitArray() { data = calloc(BitUtils::size(n), 1); }
-		template <
-			const std::size_t other_n,
-			const std::size_t other_start_bit = 0,
-			const std::size_t other_end_bit = other_n,
-			typename = std::enable_if < (other_n > 0) >::type,
-			typename = std::enable_if < (other_start_bit < other_n) >::type,
-			typename = std::enable_if < (other_end_bit <= other_n) >::type,
-			typename = std::enable_if < (other_start_bit < other_end_bit) >::type,
-			typename = std::enable_if < (other_end_bit - other_start_bit) >= n >::type
-			>
-		BitArray(const BitArray<other_n, other_start_bit, other_end_bit>& other) {
-			data = malloc(BitUtils::size(n));
-			copy<other_n, other_start_bit, other_end_bit>(other);
-		}
-
-		~BitArray() { free(data); }
-
-		void set(std::size_t i, bool b)		{ BitUtils::set(data, n, start_bit, end_bit, i, b); }
-		bool get(std::size_t i) const		{ return BitUtils::get(data, n, start_bit, end_bit, i); }
-		void flip(std::size_t i)			{ BitUtils::flip(data, n, start_bit, end_bit, i); }
-		void fill(bool b)                   { BitUtils::fill(data, n, start_bit, end_bit, b); }
-		void fill_s(bool b)                 { BitUtils::fill_s(data, n, start_bit, end_bit, b); }
-		
-		template <
-			const std::size_t other_n,
-			const std::size_t other_start_bit = 0,
-			const std::size_t other_end_bit = other_n,
-			typename = std::enable_if < (other_n > 0) >::type,
-			typename = std::enable_if < (other_start_bit < other_n) >::type,
-			typename = std::enable_if < (other_end_bit <= other_n) >::type,
-			typename = std::enable_if < (other_start_bit < other_end_bit) >::type,
-			typename = std::enable_if < (other_end_bit - other_start_bit) >= n >::type
-		>
-		void copy(const BitArray<other_n, other_start_bit, other_end_bit>& other) {
-			BitUtils::copy(data, n, start_bit, end_bit, *other, other_n, other_start_bit, other_end_bit); 
-		}
-
-		std::string str() const { return BitUtils::str(data, n, start_bit, end_bit); }
-		std::wstring wstr() const { return BitUtils::wstr(data, n, start_bit, end_bit); }
-
-		void for_each_bit(void (*func)(bool b))	const			 { BitUtils::for_each_bit(data, (char*)data + BitUtils::size(n), func); }
-		void for_each_bit(std::function<void(bool)>& func) const { BitUtils::for_each_bit(data, (char*)data + BitUtils::size(n), func); }
-		void for_each_byte(void (*func)(char* pC))				 { BitUtils::for_each_byte(data, (char*)data + BitUtils::size(n), func); }
-		void for_each_byte(std::function<void(char*)>& func)	 { BitUtils::for_each_byte(data, (char*)data + BitUtils::size(n), func); }
-
-		template <class PageType, typename = std::enable_if_t < std::is_arithmetic_v<PageType>, bool > >
-		void for_each_page(void (*func)(PageType* pP)) {
-			BitUtils::for_each_page(data, (char*)data + BitUtils::size(n), func);
-		}
-
-		template <class PageType, typename = std::enable_if_t < std::is_arithmetic_v<PageType>, bool > >
-		void for_each_page(std::function<void(PageType*)>& func) { BitUtils::for_each_page(data, (char*)data + BitUtils::size(n), func); }
-
-		void rfor_each_bit(void (*func)(bool b)) { BitUtils::for_each_bit((char*)data + BitUtils::size(n), data, func); }
-		void rfor_each_bit(std::function<void(bool)>& func) { BitUtils::for_each_bit((char*)data + BitUtils::size(n), data, func); }
-		void rfor_each_byte(void (*func)(char* pC)) { BitUtils::for_each_byte((char*)data + BitUtils::size(n), data, func); }
-		void rfor_each_byte(std::function<void(char*)>& func) { BitUtils::for_each_byte((char*)data + BitUtils::size(n), data, func); }
-
-		template <class PageType, typename = std::enable_if_t < std::is_arithmetic_v<PageType>, bool > >
-		void rfor_each_page(void (*func)(PageType* pP)) { BitUtils::for_each_page((char*)data + BitUtils::size(n), data, func); }
-
-		template <class PageType, typename = std::enable_if_t < std::is_arithmetic_v<PageType>, bool > >
-		void rfor_each_page(std::function<void(PageType*)>& func) { BitUtils::for_each_page((char*)data + BitUtils::size(n), data, func); }
-
-		void* const operator*() { return data; }
-		const void* const operator*() const { return data; }
-
-		void operator&=(const BitArray<n>& other) { BitUtils::bitwise_and(data, *other, data, n); }
-		BitArray<n> operator&(const BitArray<n>& other) const {
-			BitArray<n> output{ *this };
-			output &= other;
-			return output;
-		}
-
-		void operator|=(const BitArray<n>& other) { BitUtils::bitwise_or(data, *other, data, n); }
-		BitArray<n> operator|(const BitArray<n>& other) const {
-			BitArray<n> output{ *this };
-			output |= other;
-			return output;
-		}
-
-		void operator^=(const BitArray<n>& other) { BitUtils::bitwise_xor(data, *other, data, n); }
-		BitArray<n> operator^(const BitArray<n>& other) const {
-			BitArray<n> output{ *this };
-			output |= other;
-			return output;
-		}
-
-		BitArray<n> operator~() const {
-			BitArray<n> output{ *this };
-			BitUtils::bitwise_not(data, *output, n);
-			return output;
-		}
-
-		bool operator==(const BitArray<n>& other) const { return BitUtils::equals(data, n, *other, n); }
-		operator bool() const { 
-			if (n == (end_bit - start_bit))
-				return BitUtils::bool_op(data, n, start_bit, end_bit);
-			return BitUtils::bool_op_s(data, n, start_bit, end_bit);
-		}
-
-		template <
-			const std::size_t other_n,
-			const std::size_t other_start_bit = 0,
-			const std::size_t other_end_bit = other_n,
-			typename = std::enable_if < (other_n > 0) >::type,
-			typename = std::enable_if < (other_start_bit < other_n) >::type,
-			typename = std::enable_if < (other_end_bit <= other_n) >::type,
-			typename = std::enable_if < (other_start_bit < other_end_bit) >::type,
-			typename = std::enable_if < (other_end_bit - other_start_bit) >= n >::type
-		>
-		operator BitArray<other_n, other_start_bit, other_end_bit>() const {
-			BitArray<other_n, other_start_bit, other_end_bit> output;
-			output.copy(*this);
-			return output;
-		}
-	};
 };
 
 

@@ -1,11 +1,13 @@
 # bit-utils
 This is a programming exercise that aimed to help me understand C better.
 
-This is targeted towards C++17 language standard.
+This is targeted towards C++11 and C++17 language standards.
 
-This aims to make functions that can read/write bits as if they were in an array. Technically they are, but it isn't like a conventional array.
+The C++11 version is just a namespace with functions that, admittingly, have shitloads of parameters, but it doesn't require you to know the size of memory blocks at compile time.
+It is also worth noting that this version is less forgiving with wrong values for variables.
 
-I first went with a namespace apparoach and thought it was okay.
-Then I went with a generic class with static functions and I like it a lot more because I can use SFINAE to validate some things so as to minimize the amount of accidental destruction done.
+The C++17 version adds a generic class that aims to make the number of parameters for each function much shorter by making them template arguments. This does have the drawback of only working at compile time, but on the upside, it uses SFINAE so we don't have to do checks we don't need to at runtime.
 
-`BitUtils.h` isn't really the final product. If you, for whatever reason, want to use this stuff then use `BitUtils2.h`
+If, for whatever reason, you decide you want to use this I just want to warn you that **this is not dummy proof and if you do decide to use it, you gotta know what you're doing.** 
+
+This is for very niche uses and I don't think everyone should use it. While making this, I had a number of times when I could've done serious damage to my computer if it wasn't for the heap corruption error that msvc gives you.

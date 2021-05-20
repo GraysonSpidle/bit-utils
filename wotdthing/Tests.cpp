@@ -1,12 +1,10 @@
-// wotdthing.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
+// Just runs some tests
 
 #include <iostream>
 #include <cassert>
 #include <iomanip>
 
 #include "BitUtils.h"
-//#include "BitUtils2.h"
 
 #ifdef CHAR_BIT
 constexpr const std::size_t CHAR_SIZE = CHAR_BIT;

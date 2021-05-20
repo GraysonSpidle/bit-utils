@@ -5,16 +5,9 @@
 #include <cassert>
 #include <iomanip>
 
-//#include "BitUtils.h"
-#include "BitUtils2.h"
+#include "BitUtils.h"
+//#include "BitUtils2.h"
 
-#ifdef BITUTILS_H
-#ifdef BITUTILS2_H
-#error don't pick both of the headers to include
-#endif
-#endif
-
-#ifndef BITUTILS2_H
 #ifdef CHAR_BIT
 constexpr const std::size_t CHAR_SIZE = CHAR_BIT;
 #else
@@ -22,22 +15,21 @@ constexpr const std::size_t CHAR_SIZE = CHAR_BIT;
 constexpr const std::size_t CHAR_SIZE = __CHAR_BIT__;
 #endif // __CHAR_BIT__
 #endif // CHAR_BIT
-#endif // BITUTILS2_H
 
-void test();
+void testCpp11();
+#if __cplusplus >= 201700 // C++17
+void testCpp17();
+#endif // C++17
 
 int main(int argc, char * argv[]) {
-	test();
+#if __cplusplus >= 201700 // C++17
+	testCpp17();
+#endif // C++17
+	testCpp11();
 	return 0;
 }
 
-
-void thing(char* arr_ptr) {
-	std::cout << *arr_ptr << std::endl;
-}
-
-void test() {
-#ifdef BITUTILS_H
+void testCpp11() {
 	constexpr const std::size_t n = 10;
 	constexpr const std::size_t start = 0;
 	constexpr const std::size_t end = 8;
@@ -57,10 +49,11 @@ void test() {
 		std::cout << "Forcibly using safe versions of functions." << std::endl;
 	}
 	std::cout << std::endl;
+}
 
-#else
-#ifdef BITUTILS2_H
-	typedef BitUtils<10, 1, 9> Thing;
+#if __cplusplus >= 201700 // C++17
+void testCpp17() {
+	typedef BitUtils::BitUtils<10, 1, 9> Thing;
 
 	void* block = Thing::create();
 
@@ -121,10 +114,7 @@ void test() {
 	Thing::bitwise_or<Thing::of<size_t>, Thing::of<size_t>, Thing>(&l, &r, block);
 	Thing::unbound::str(block, std::cout);
 	std::cout << std::endl;
-
+	
 	free(block);
-#else
-#error include one of the headers so you can test it you moron
-#endif // BITUTILS2_H
-#endif // BITUTILS_H
 }
+#endif // C++17

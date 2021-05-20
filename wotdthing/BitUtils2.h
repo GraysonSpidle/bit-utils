@@ -54,10 +54,14 @@ template <
 	const std::size_t _n,
 	const std::size_t start_bit = 0,
 	const std::size_t end_bit = _n,
-	std::enable_if_t < (_n > 0) , bool > = true,
-	std::enable_if_t < (start_bit < _n) , bool > = true,
-	std::enable_if_t < (end_bit <= _n) , bool > = true,
-	std::enable_if_t < (start_bit < end_bit) , bool > = true
+	std::enable_if_t <
+		(_n > 0) &&
+		(end_bit > 0) &&
+		(start_bit < _n) &&
+		(end_bit <= _n) &&
+		(start_bit < end_bit),
+		bool
+	> = true
 >
 class BitUtils {
 #define _BITUTILS_IS_LITTLE_ENDIAN (1 << 1) > 1
@@ -70,7 +74,7 @@ public:
 	// ========== TYPE DEFS ==========
 
 
-	/* A typedef that sets bounds for the BitUtils.
+	/* A typedef that sets bounds for the BitUtils relative to the current bounds (if any are there).
 	This guarantees 2 things:
 	* the resulting type's n value will be a log of 2.
 	* the safe versions of functions (where available) are forcibly used.
@@ -78,11 +82,17 @@ public:
 	template <
 		const std::size_t start,
 		const std::size_t end,
-		std::enable_if_t < (start < n) , bool > = true,
-		std::enable_if_t < (end <= n) , bool > = true,
-		std::enable_if_t < (start < end) , bool > = true
+		std::enable_if_t <
+			(start >= start_bit) &&
+			(end <= end_bit),
+			bool
+		> = true
 	>
-	using bound = BitUtils<size * CHAR_SIZE, start, end>;
+	using bound = BitUtils<
+		size * CHAR_SIZE,
+		start + start_bit,
+		end_bit - (end_bit - end)
+	>;
 
 	/* A typedef that removes all bounds for the BitUtils. 
 	It guarantees 2 things:
@@ -100,36 +110,36 @@ public:
 
 	// ========== FUNCTIONS ==========
 
-	static char* const getPage(void* const arr_ptr, std::size_t i) {
+	static unsigned char* const getPage(void* const arr_ptr, const std::size_t i) {
 		if constexpr (_n == n) {
 			if (i > size * CHAR_SIZE)
-				throw std::out_of_range("");
+				throw std::out_of_range("You're out of the soft bounds. Potentially destructive behavior is likely to occur.");
 		}
 		else {
 			if (i >= n)
-				throw std::out_of_range("");
+				throw std::out_of_range("You're out of bounds. Potentially destructive behavior is likely to occur.");
 		}
 		
 		if constexpr (size == 1)
-			return (char*)arr_ptr;
+			return reinterpret_cast<unsigned char*>(arr_ptr);
 		else {
-			return (char*)arr_ptr + ((i + start_bit) / CHAR_SIZE);
+			return reinterpret_cast<unsigned char*>(arr_ptr) + ((i + start_bit) / CHAR_SIZE);
 		}
 	}
-	static const char* const getPage(const void* const arr_ptr, std::size_t i) {
-		if constexpr (n == _n) {
+	static const unsigned char* const getPage(const void* const arr_ptr, const std::size_t i) {
+		if constexpr (_n == n) {
 			if (i > size * CHAR_SIZE)
-				throw std::out_of_range("");
+				throw std::out_of_range("You're out of the soft bounds. Potentially destructive behavior is likely to occur.");
 		}
 		else {
 			if (i >= n)
-				throw std::out_of_range("");
+				throw std::out_of_range("You're out of bounds. Potentially destructive behavior is likely to occur.");
 		}
 
 		if constexpr (size == 1)
-			return (char*)arr_ptr;
+			return reinterpret_cast<const unsigned char* const>(arr_ptr);
 		else {
-			return (char*)arr_ptr + ((i + start_bit) / CHAR_SIZE);
+			return reinterpret_cast<const unsigned char* const>(arr_ptr) + ((i + start_bit) / CHAR_SIZE);
 		}
 	}
 
@@ -201,7 +211,7 @@ public:
 		if constexpr (n != _n)
 			fill_s(src, b);
 		else if constexpr (n == CHAR_SIZE)
-			*((unsigned char*)src) = b ? -1 : 0;
+			*(reinterpret_cast<unsigned char* const>(src)) = b ? -1 : 0;
 		else
 			memset(src, b ? (unsigned char)-1 : 0, size);
 	}
@@ -220,15 +230,19 @@ public:
 	static void fill_s(void* const src, bool b) {
 		if constexpr (_n != n) {
 			if constexpr (n < CHAR_SIZE) {
-				char* page = getPage(src, start_bit);
-				using PageUtils = BitUtils<n, start_bit % CHAR_SIZE, (CHAR_SIZE <= n ? CHAR_SIZE : (end_bit % CHAR_SIZE)) >;
+				unsigned char* page = getPage(src, start_bit);
+				using PageUtils = BitUtils<
+					CHAR_SIZE,
+					start_bit % n,
+					(end_bit > CHAR_SIZE ? CHAR_SIZE : end_bit)
+				>;
 
 				for (std::size_t i = 0; i < PageUtils::n; i++) {
 					PageUtils::set(page, i, b);
 				}
 			}
 			else {
-				char* page;
+				unsigned char* page;
 				if constexpr (start_bit) {
 					page = getPage(src, start_bit);
 					using StartPageUtils = BitUtils<CHAR_SIZE, start_bit % CHAR_SIZE>;
@@ -243,7 +257,7 @@ public:
 					for (std::size_t i = 1; i < size - 1; i++) {
 						BitUtils<CHAR_SIZE>::fill(page + i, b);
 					}
-					page = getPage(src, end_bit - 1);
+					page = getPage(src, n - 1);
 					using EndPageUtils = BitUtils<CHAR_SIZE, 0, end_bit % CHAR_SIZE>;
 
 					for (std::size_t i = 0; i < EndPageUtils::n; i++) {
@@ -409,7 +423,7 @@ public:
 	static void bitwise_not(const void* const src, void* const dst) {
 		if (src != dst)
 			copy<BitUtils_src, BitUtils_dst>(src, dst);
-		for (std::size_t i = 0; i < size * CHAR_SIZE; i += CHAR_SIZE) {
+		for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
 			*BitUtils_dst::getPage(dst, i) = ~(*BitUtils_dst::getPage(dst, i));
 		}
 	}
@@ -520,77 +534,83 @@ public:
 		return ss.str();
 	}
 
-	static void for_each_byte(void* const arr_ptr, void (*func)(char* pC)) {
+	template <
+		typename FF,
+		std::enable_if_t < std::is_invocable_v <FF, unsigned char* const>, bool > = true
+	>
+	static void for_each_byte(void* const arr_ptr, const FF& func) {
 		for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
-			func(getPage(arr_ptr, i));
+			std::invoke(func, getPage(arr_ptr, i));
 		}
 	}
 
-	static void for_each_byte(void* const arr_ptr, const std::function<void(char*)>& func) {
+	template <
+		typename FF,
+		std::enable_if_t < std::is_invocable_v <FF, unsigned char* const>, bool > = true
+	>
+	static void rfor_each_byte(void* const arr_ptr, const FF& func) {
+		for (std::size_t i = n - 1; i > CHAR_SIZE; i -= CHAR_SIZE) {
+			std::invoke(func, getPage(arr_ptr, i));
+		}
+		std::invoke(func, getPage(arr_ptr, 0));
+	}
+
+
+	template <
+		typename FF,
+		std::enable_if_t < std::is_invocable_v <FF, const unsigned char* const>, bool > = true
+	>
+		static void for_each_byte(const void* const arr_ptr, const FF& func) {
 		for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
-			func(getPage(arr_ptr, i));
+			std::invoke(func, getPage(arr_ptr, i));
 		}
 	}
 
-	static void rfor_each_byte(void* const arr_ptr, void (*func)(char* pC)) {
-		for (std::size_t i = n; i > CHAR_SIZE; i -= CHAR_SIZE) {
-			func(getPage(arr_ptr, i));
+	template <
+		typename FF,
+		std::enable_if_t < std::is_invocable_v <FF, const unsigned char* const>, bool > = true
+	>
+		static void rfor_each_byte(const void* const arr_ptr, const FF& func) {
+		for (std::size_t i = n - 1; i > CHAR_SIZE; i -= CHAR_SIZE) {
+			std::invoke(func, getPage(arr_ptr, i));
 		}
-		func(getPage(arr_ptr, 0));
+		std::invoke(func, getPage(arr_ptr, 0));
 	}
 
-	static void rfor_each_byte(void* const arr_ptr, std::function<void(char*)>& func) {
-		for (std::size_t i = n; i > CHAR_SIZE; i -= CHAR_SIZE) {
-			func(getPage(arr_ptr, i));
-		}
-		func(getPage(arr_ptr, 0));
-	}
-
-	static void for_each_bit(const void* const arr_ptr, void (*func)(bool b)) {
-		const char* page;
+	template <
+		typename FF,
+		std::enable_if_t < std::is_invocable_v <FF, bool>, bool > = true
+	>
+	static void for_each_bit(const void* const arr_ptr, const FF& func) {
+		const unsigned char* page;
 		for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
 			page = getPage(arr_ptr, i);
 			for (std::size_t j = 0; j < CHAR_SIZE; j++) {
-				func(BitUtils<CHAR_SIZE>::get(page, j));
+				try {
+					std::invoke(func, BitUtils<CHAR_SIZE>::get(page, j));
+				}
+				catch (std::out_of_range& err) {
+					if (strlen(err.what))
+						break;
+					else
+						throw err;
+				}
 			}
 		}
 	}
 
-	static void for_each_bit(const void* const arr_ptr, std::function<void(bool)>& func) {
-		const char* page;
-		for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
-			page = getPage(arr_ptr, i);
-			for (std::size_t j = 0; j < CHAR_SIZE; j++) {
-				func(BitUtils<CHAR_SIZE>::get(page, j));
-			}
-		}
-	}
-
-	static void rfor_each_bit(const void* const arr_ptr, void (*func)(bool b)) {
-		const char* page;
-		for (std::size_t i = n; i > CHAR_SIZE; i -= CHAR_SIZE) {
-			page = getPage(arr_ptr, i);
-			for (std::size_t j = CHAR_SIZE - 1; j > 0; j--) {
-				func(BitUtils<CHAR_SIZE>::get(page, j));
-			}
-			func(BitUtils<CHAR_SIZE>::get(page, 0));
-		}
-
-		page = getPage(arr_ptr, 0);
-		for (std::size_t j = CHAR_SIZE - 1; j > 0; j--) {
-			func(BitUtils<CHAR_SIZE>::get(page, j));
-		}
-		func(BitUtils<CHAR_SIZE>::get(page, 0));
-	}
-
-	static void rfor_each_bit(const void* const arr_ptr, std::function<void(bool)>& func) {
-		const char* page;
-		for (std::size_t i = n; i > CHAR_SIZE; i -= CHAR_SIZE) {
+	template <
+		typename FF,
+		std::enable_if_t < std::is_invocable_v <FF, bool>, bool > = true
+	>
+	static void rfor_each_bit(const void* const arr_ptr, const FF& func) {
+		const unsigned char* page;
+		for (std::size_t i = n - 1; i > CHAR_SIZE; i -= CHAR_SIZE) {
 			page = getPage(arr_ptr, i);
 			for (std::size_t j = CHAR_SIZE - 1; j > 0; j--) {
-				func(BitUtils<CHAR_SIZE>::get(page, j));
+				std::invoke(func, BitUtils<CHAR_SIZE>::get(page, j));
 			}
-			func(BitUtils<CHAR_SIZE>::get(page, 0));
+			std::invoke(func, BitUtils<CHAR_SIZE>::get(page, 0));
 		}
 
 		page = getPage(arr_ptr, 0);

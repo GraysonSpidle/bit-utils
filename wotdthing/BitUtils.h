@@ -37,6 +37,23 @@
 #define _BITUTILS_IS_LITTLE_ENDIAN (1 << 1) > 1
 
 #if __cplusplus >= 201100 // C++11
+/* The namespace for the BitUtils library.
+* 
+* Most functions have 2 versions: a safe version and a regular version. 
+* Safe functions adhere to bounds given by the programmer.
+If bounds are explicitly set (ie different from the defaults), then every regular function (that has a safe variant) will automatically default to the safe variant.
+
+* However, if bounds are implicitly set (ie specifying an n value that is not a logarithm of 2),
+then that is what I have dubbed as "soft bounds". This means that both versions of functions
+retain their respective functionality and it is up to the programmer if he/she would like to
+read/modify all bits or just the soft bounded ones.
+
+* Every function/class inside this namespace, where there's a start_bit and end_bit, the start_bit
+is ALWAYS inclusive and end_bit is ALWAYS exclusive.
+* 
+* Every function/class inside this namespace that has a non-const parameter 100% means that it WILL modify it in some way.
+Also, const* and *const are no exception to this.
+*/
 namespace BitUtils {
 #ifdef CHAR_BIT
 	constexpr const std::size_t CHAR_SIZE = CHAR_BIT;
@@ -188,6 +205,30 @@ namespace BitUtils {
 		void* const dst,
 		const std::size_t dst_n);
 
+	void bitwise_and_s(
+		const void* const left,
+		const std::size_t left_n,
+		const std::size_t left_start_bit,
+		const std::size_t left_end_bit,
+		const void* const right,
+		const std::size_t right_n,
+		const std::size_t right_start_bit,
+		const std::size_t right_end_bit,
+		void* const dst,
+		const std::size_t dst_n,
+		const std::size_t dst_start_bit,
+		const std::size_t dst_end_bit
+	);
+
+	void bitwise_and_s(
+		const void* const left,
+		const void* const right,
+		void* const dst,
+		const std::size_t n,
+		const std::size_t start_bit,
+		const std::size_t end_bit
+	);
+
 	/* Does the | bitwise operation on two memory blocks and puts the result in the destination memory block.
 	This is the equivalent of: dst = left | right
 	*
@@ -216,6 +257,30 @@ namespace BitUtils {
 		const std::size_t right_n,
 		void* const dst,
 		const std::size_t dst_n);
+
+	void bitwise_or_s(
+		const void* const left,
+		const std::size_t left_n,
+		const std::size_t left_start_bit,
+		const std::size_t left_end_bit,
+		const void* const right,
+		const std::size_t right_n,
+		const std::size_t right_start_bit,
+		const std::size_t right_end_bit,
+		void* const dst,
+		const std::size_t dst_n,
+		const std::size_t dst_start_bit,
+		const std::size_t dst_end_bit
+	);
+
+	void bitwise_or_s(
+		const void* const left,
+		const void* const right,
+		void* const dst,
+		const std::size_t n,
+		const std::size_t start_bit,
+		const std::size_t end_bit
+	);
 
 	/* Does the ^ bitwise operation on two memory blocks and puts the result in the destination memory block.
 	This is the equivalent of: dst = left ^ right
@@ -246,6 +311,30 @@ namespace BitUtils {
 		void* const dst,
 		const std::size_t dst_n);
 
+	void bitwise_xor_s(
+		const void* const left,
+		const std::size_t left_n,
+		const std::size_t left_start_bit,
+		const std::size_t left_end_bit,
+		const void* const right,
+		const std::size_t right_n,
+		const std::size_t right_start_bit,
+		const std::size_t right_end_bit,
+		void* const dst,
+		const std::size_t dst_n,
+		const std::size_t dst_start_bit,
+		const std::size_t dst_end_bit
+	);
+
+	void bitwise_xor_s(
+		const void* const left,
+		const void* const right,
+		void* const dst,
+		std::size_t n,
+		std::size_t start_bit,
+		std::size_t end_bit
+	);
+
 	/* Does the ~ bitwise operation on a memory blocks and puts the result in the destination memory block.
 	This is the equivalent of: dst = ~arr
 	*
@@ -275,6 +364,16 @@ namespace BitUtils {
 
 	void bitwise_not(void* const src,
 		const std::size_t n);
+
+	void bitwise_not_s(const void* const src,
+		const std::size_t src_n,
+		const std::size_t src_start_bit,
+		const std::size_t src_end_bit,
+		void* const dst,
+		const std::size_t dst_n,
+		const std::size_t dst_start_bit,
+		const std::size_t dst_end_bit);
+
 
 	/* Evaluates the memory block as a bool.
 	This is similar to casting an int to a bool
@@ -331,6 +430,34 @@ namespace BitUtils {
 		const std::size_t start_bit,
 		const std::size_t end_bit);
 
+	void copy(const void* const src,
+		void* const dst,
+		const std::size_t n);
+
+	int compare(const void* const left,
+		const std::size_t left_n,
+		const std::size_t left_start_bit,
+		const std::size_t left_end_bit,
+		const void* const right,
+		const std::size_t right_n,
+		const std::size_t right_start_bit,
+		const std::size_t right_end_bit);
+
+	int compare(const void* const left,
+		const void* const right,
+		const std::size_t n,
+		const std::size_t start_bit,
+		const std::size_t end_bit);
+
+	int compare_s(const void* const left,
+		const std::size_t left_n,
+		const std::size_t left_start_bit,
+		const std::size_t left_end_bit,
+		const void* const right,
+		const std::size_t right_n,
+		const std::size_t right_start_bit,
+		const std::size_t right_end_bit);
+
 	/* Performs the == operation on two memory blocks.
 	* 
 	Parameters
@@ -353,6 +480,21 @@ namespace BitUtils {
 	bool equals(const void* left,
 		const void* const right,
 		const std::size_t n);
+
+	bool equals_s(const void* const left,
+		const std::size_t left_n,
+		const std::size_t left_start_bit,
+		const std::size_t left_end_bit,
+		const void* const right,
+		const std::size_t right_n,
+		const std::size_t right_start_bit,
+		const std::size_t right_end_bit);
+
+	bool equals_s(const void* const left,
+		const void* const right,
+		const std::size_t n,
+		const std::size_t start_bit,
+		const std::size_t end_bit);
 
 	/* Puts a string representation of the binary of the memory block into the supplied buffer.
 	Bit 0 will always be the left most number regardless if the machine is big or little endian.
@@ -549,54 +691,57 @@ namespace BitUtils {
 		> = true
 	>
 	class BitUtils {
+#define _BITUITLS_USE_SAFE_FUNCTIONS(BitUtils0, BitUtils1, BitUtils2) (BitUtils0::is_bounded || BitUtils1::is_bounded || BitUtils2::is_bounded)
+#define _BITUITLS_USE_SAFE_FUNCTIONS2(BitUtils0, BitUtils1) (BitUtils0::is_bounded || BitUtils1::is_bounded)
 	public:
 		constexpr static const std::size_t n = end_bit - start_bit; // The number of bits we're working with.
 		constexpr static const std::size_t size = (_n <= CHAR_SIZE ? 1 : (_n / CHAR_SIZE) + bool(_n % CHAR_SIZE)); // The number of bytes that would be allocated.
 		constexpr static const std::size_t start_bit = start_bit; // The index of the bit to start on (inclusive).
 		constexpr static const std::size_t end_bit = end_bit; // The index of the bit to end on (exclusive).
+		constexpr static const bool is_bounded = _n != n;
+		constexpr static const bool is_soft_bounded = (n != size * CHAR_SIZE) && !is_bounded;
 
 		// ========== TYPE DEFS ==========
 
 
 		/* A typedef that sets bounds for the BitUtils relative to the current bounds (if any are there).
-		This guarantees 2 things:
-		* the resulting type's n value will be a log of 2.
+		This guarantees:
 		* the safe versions of functions (where available) are forcibly used.
 		*/
 		template <
 			const std::size_t start,
 			const std::size_t end,
 			std::enable_if_t <
-			(start >= start_bit) &&
-			(end <= end_bit),
-			bool
+				start >= start_bit &&
+				end <= end_bit &&
+				start < end,
+				bool
 			> = true
 		>
 		using bound = BitUtils<
-			size* CHAR_SIZE,
-			start + start_bit,
-			end_bit - (end_bit - end)
+			_n,
+			start,
+			end
 		>;
 
 		/* A typedef that removes all bounds for the BitUtils.
-		It guarantees 2 things:
-		* the resulting type's n value will be a log of 2.
+		It guarantees:
+		* _n will be a log of 2.
 		* the safe versions of functions (where available) are not forcibly used.
 		*/
-		using unbound = BitUtils<size* CHAR_SIZE>;
+		using unbound = BitUtils<size * CHAR_SIZE>;
 
 		/* A typedef that, given a type, makes an unbounded BitUtils class that accomodates for its size. */
 		template <
 			class Type
 		>
-		using of = BitUtils<sizeof(Type)* CHAR_SIZE>;
+		using of = BitUtils<sizeof(Type) * CHAR_SIZE>;
 
-
-		// ========== FUNCTIONS ==========
+		// ========== CORE FUNCTIONS ==========
 
 		static unsigned char* const getPage(void* const arr_ptr, const std::size_t i) {
-			if constexpr (_n == n) {
-				if (i > size * CHAR_SIZE)
+			if constexpr (!is_bounded) {
+				if (i >= size * CHAR_SIZE)
 					throw std::out_of_range("You're out of the soft bounds. Potentially destructive behavior is likely to occur.");
 			}
 			else {
@@ -611,8 +756,8 @@ namespace BitUtils {
 			}
 		}
 		static const unsigned char* const getPage(const void* const arr_ptr, const std::size_t i) {
-			if constexpr (_n == n) {
-				if (i > size * CHAR_SIZE)
+			if constexpr (!is_bounded) {
+				if (i >= size * CHAR_SIZE)
 					throw std::out_of_range("You're out of the soft bounds. Potentially destructive behavior is likely to occur.");
 			}
 			else {
@@ -621,9 +766,9 @@ namespace BitUtils {
 			}
 
 			if constexpr (size == 1)
-				return reinterpret_cast<const unsigned char* const>(arr_ptr);
+				return reinterpret_cast<unsigned char*>(arr_ptr);
 			else {
-				return reinterpret_cast<const unsigned char* const>(arr_ptr) + ((i + start_bit) / CHAR_SIZE);
+				return reinterpret_cast<unsigned char*>(arr_ptr) + ((i + start_bit) / CHAR_SIZE);
 			}
 		}
 
@@ -652,13 +797,6 @@ namespace BitUtils {
 				*getPage(src, i) ^= ((std::size_t)1 >> ((i + start_bit) % CHAR_SIZE));
 		}
 
-		/* Sets the designated bit to reflect the supplied boolean.
-		Parameters:
-		* src: the pointer to the memory block.
-		* i: the index of the bit to set.
-		* b: the boolean that reflects what to set the bit to (ie 1 for true and 0 for false).
-		*/
-
 		/// <summary>
 		/// Sets the designated bit to reflect the supplied boolean.
 		/// </summary>
@@ -676,6 +814,8 @@ namespace BitUtils {
 				flip(src, i);
 		}
 
+		// ========== FUNCTIONS ==========
+
 		/// <summary>
 		/// Dynamically allocates enough bytes to accomodate as designated by n.
 		/// This is literally just utilizes calloc()
@@ -692,7 +832,7 @@ namespace BitUtils {
 		/// <param name="src">the pointer to the memory block.</param>
 		/// <param name="b">the boolean that reflects what to fll the memory block with (ie 1 for true and 0 false).</param>
 		static void fill(void* const src, bool b) {
-			if constexpr (n != _n)
+			if constexpr (is_bounded)
 				fill_s(src, b);
 			else if constexpr (n == CHAR_SIZE)
 				*(reinterpret_cast<unsigned char* const>(src)) = b ? -1 : 0;
@@ -700,82 +840,20 @@ namespace BitUtils {
 				memset(src, b ? (unsigned char)-1 : 0, size);
 		}
 
-		/* Safely fills the memory block to reflect the supplied boolean. "Safely" means that it will only modify the bits specified either by the bounds or by n.
-		Parameters:
-		* src: the pointer to the memory block.
-		* b: the boolean that reflects what to safely fill the memory block with (ie 1 for true and 0 for false).
-		*/
-
 		/// <summary>
 		/// Fills the bounded memory block to reflect the supplied boolean.
 		/// </summary>
 		/// <param name="src">the pointer to the memory block.</param>
 		/// <param name="b">the boolean that reflects what to fill the memory block with (ie 1 for true and 0 for false).</param>
 		static void fill_s(void* const src, bool b) {
-			if constexpr (_n != n) {
-				if constexpr (n < CHAR_SIZE) {
-					unsigned char* page = getPage(src, start_bit);
-					using PageUtils = BitUtils<
-						CHAR_SIZE,
-						start_bit% n,
-						(end_bit > CHAR_SIZE ? CHAR_SIZE : end_bit)
-				>;
-
-					for (std::size_t i = 0; i < PageUtils::n; i++) {
-						PageUtils::set(page, i, b);
-					}
-				}
-				else {
-					unsigned char* page;
-					if constexpr (start_bit) {
-						page = getPage(src, start_bit);
-						using StartPageUtils = BitUtils<CHAR_SIZE, start_bit% CHAR_SIZE>;
-
-						for (std::size_t i = 0; i < StartPageUtils::n; i++) {
-							StartPageUtils::set(page, i, b);
-						}
-					}
-
-					page = getPage(src, start_bit);
-					if constexpr (end_bit < _n) {
-						for (std::size_t i = 1; i < size - 1; i++) {
-							BitUtils<CHAR_SIZE>::fill(page + i, b);
-						}
-						page = getPage(src, n - 1);
-						using EndPageUtils = BitUtils<CHAR_SIZE, 0, end_bit% CHAR_SIZE>;
-
-						for (std::size_t i = 0; i < EndPageUtils::n; i++) {
-							EndPageUtils::set(page, i, b);
-						}
-					}
-					else {
-						for (std::size_t i = 1; i < size; i++) {
-							BitUtils<CHAR_SIZE>::fill(page + i, b);
-						}
-					}
+			if constexpr (is_bounded || is_soft_bounded) {
+				for (std::size_t i = 0; i < n; i++) {
+					set(src, i, b);
 				}
 			}
-			else {
-				if constexpr ((size * CHAR_SIZE) == n) {
-					fill(src, b);
-				}
-				else {
-					for (std::size_t i = 0; i < n; i++) {
-						set(src, i, b);
-					}
-				}
-			}
+			else
+				fill(src, b);
 		}
-
-
-		/* Copies the memory block into another.
-		Template Parameters:
-		* BitUtils_src: the BitUtils class to use for the src variable. Defaults to the current BitUtils class.
-		* BitUtils_dst: the BitUtils class to use for the dst variable. Defaults to the current BitUtils class.
-		Parameters:
-		* src: the pointer to the source memory block. If this equals dst, this function does nothing.
-		* dst: the pointer to the destination memory block. If this equals src, this function does nothing.
-		*/
 
 		/// <summary>
 		/// Copies the memory block into another.
@@ -791,7 +869,7 @@ namespace BitUtils {
 			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst>, bool > = true
 		>
 		static void copy(const void* const src, void* const dst) {
-			if (src == dst)
+			if (src == dst) // lol
 				return;
 			if constexpr (std::is_same_v<BitUtils, BitUtils_dst> && std::is_same_v<BitUtils, BitUtils_src>) {
 #ifdef __STDC_LIB_EXT1__
@@ -801,7 +879,7 @@ namespace BitUtils {
 #ifdef __GNUG__
 				memcpy(dst, src, size);
 				return;
-#endif // __GNUG__
+#endif
 #endif // __STDC_LIB_EXT1__
 			}
 			BitUtils_dst::fill(dst, 0);
@@ -826,14 +904,48 @@ namespace BitUtils {
 			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst>, bool > = true
 		>
 		static void bitwise_and(const void* const left, const void* const right, void* const dst) {
-			if (left == right) {
-				if (left == dst)
-					return;
-				copy<BitUtils_left, BitUtils_dst>(left, dst);
-				return;
+			if constexpr (_BITUITLS_USE_SAFE_FUNCTIONS(BitUtils_left, BitUtils_right, BitUtils_dst)) {
+				bitwise_and_s<BitUtils_left, BitUtils_right, BitUtils_dst>(left, right, dst);
 			}
-			for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
-				*BitUtils_dst::getPage(dst, i) = *BitUtils_left::getPage(left, i) & *BitUtils_right::getPage(right, i);
+			else {
+				if (left == right) {
+					if (left == dst)
+						return;
+					copy<BitUtils_left, BitUtils_dst>(left, dst);
+					return;
+				}
+				for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
+					*BitUtils_dst::getPage(dst, i) = *BitUtils_left::getPage(left, i) & *BitUtils_right::getPage(right, i);
+				}
+			}
+		}
+
+		template <
+			class BitUtils_left = BitUtils,
+			class BitUtils_right = BitUtils,
+			class BitUtils_dst = BitUtils,
+			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_left>, bool > = true,
+			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_right>, bool > = true,
+			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst>, bool > = true
+		>
+		static void bitwise_and_s(const void* const left, const void* const right, void* const dst) {
+			if constexpr (
+				!_BITUITLS_USE_SAFE_FUNCTIONS(BitUtils_left, BitUtils_right, BitUtils_dst)
+			) {
+				bitwise_and<BitUtils_left, BitUtils_right, BitUtils_dst>(left, right, dst);
+			}
+			else {
+				if (left == right) {
+					if (left == dst)
+						return;
+					copy<BitUtils_left, BitUtils_dst>(left, dst);
+					return;
+				}
+				std::size_t min_n = (BitUtils_left::n < BitUtils_right::n) ? BitUtils_left::n : BitUtils_right::n;
+				min_n = (min_n < BitUtils_dst::n) ? min_n : BitUtils_dst::n;
+				for (std::size_t i = 0; i < min_n; i++) {
+					BitUtils_dst::set(dst, i, BitUtils_left::get(left, i) & BitUtils_right::get(right, i));
+				}
 			}
 		}
 
@@ -855,12 +967,45 @@ namespace BitUtils {
 			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst>, bool > = true
 		>
 		static void bitwise_or(const void* const left, const void* const right, void* const dst) {
-			if (left == right) {
-				bitwise_and<BitUtils_left, BitUtils_right, BitUtils_dst>(left, right, dst);
-				return;
+			if constexpr (_BITUITLS_USE_SAFE_FUNCTIONS(BitUtils_left, BitUtils_right, BitUtils_dst)) {
+				bitwise_or_s<BitUtils_left, BitUtils_right, BitUtils_dst>(left, right, dst);
 			}
-			for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
-				*BitUtils_dst::getPage(dst, i) = *BitUtils_left::getPage(left, i) | *BitUtils_right::getPage(right, i);
+			else {
+				if (left == right) {
+					if (left == dst)
+						return;
+					copy<BitUtils_left, BitUtils_dst>(left, dst);
+					return;
+				}
+				for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
+					*BitUtils_dst::getPage(dst, i) = *BitUtils_left::getPage(left, i) | *BitUtils_right::getPage(right, i);
+				}
+			}
+		}
+
+		template <
+			class BitUtils_left = BitUtils,
+			class BitUtils_right = BitUtils,
+			class BitUtils_dst = BitUtils,
+			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_left>, bool > = true,
+			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_right>, bool > = true,
+			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst>, bool > = true
+		>
+		static void bitwise_or_s(const void* const left, const void* const right, void* const dst) {
+			if constexpr (!_BITUITLS_USE_SAFE_FUNCTIONS(BitUtils_left, BitUtils_right, BitUtils_dst))
+				bitwise_or<BitUtils_left, BitUtils_right, BitUtils_dst>(left, right, dst);
+			else {
+				if (left == right) {
+					if (left == dst)
+						return;
+					copy<BitUtils_left, BitUtils_dst>(left, dst);
+					return;
+				}
+				std::size_t min_n = (BitUtils_left::n < BitUtils_right::n) ? BitUtils_left::n : BitUtils_right::n;
+				min_n = (min_n < BitUtils_dst::n) ? min_n : BitUtils_dst::n;
+				for (std::size_t i = 0; i < min_n; i++) {
+					BitUtils_dst::set(dst, i, BitUtils_left::get(left, i) | BitUtils_right::get(right, i));
+				}
 			}
 		}
 
@@ -882,12 +1027,40 @@ namespace BitUtils {
 			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst>, bool > = true
 		>
 		static void bitwise_xor(const void* const left, const void* const right, void* const dst) {
-			if (left == right) {
-				BitUtils_dst::fill(dst, 0);
-				return;
+			if constexpr (_BITUITLS_USE_SAFE_FUNCTIONS(BitUtils_left, BitUtils_right, BitUtils_dst))
+				bitwise_xor_s<BitUtils_left, BitUtils_right, BitUtils_dst>(left, right, dst);
+			else {
+				if (left == right) {
+					BitUtils_dst::fill(dst, 0);
+					return;
+				}
+				for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
+					*BitUtils_dst::getPage(dst, i) = *BitUtils_left::getPage(left, i) ^ *BitUtils_right::getPage(right, i);
+				}
 			}
-			for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
-				*BitUtils_dst::getPage(dst, i) = *BitUtils_left::getPage(left, i) ^ *BitUtils_right::getPage(right, i);
+		}
+
+		template <
+			class BitUtils_left = BitUtils,
+			class BitUtils_right = BitUtils,
+			class BitUtils_dst = BitUtils,
+			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_left>, bool > = true,
+			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_right>, bool > = true,
+			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst>, bool > = true
+		>
+		static void bitwise_xor_s(const void* const left, const void* const  right, void* const dst) {
+			if constexpr (!_BITUITLS_USE_SAFE_FUNCTIONS(BitUtils_left, BitUtils_right, BitUtils_dst))
+				bitwise_xor<BitUtils_left, BitUtils_right, BitUtils_dst>(left, right, dst);
+			else {
+				if (left == right) {
+					BitUtils_dst::fill(dst, 0);
+					return;
+				}
+				std::size_t min_n = (BitUtils_left::n < BitUtils_right::n) ? BitUtils_left::n : BitUtils_right::n;
+				min_n = (min_n < BitUtils_dst::n) ? min_n : BitUtils_dst::n;
+				for (std::size_t i = 0; i < min_n; i++) {
+					BitUtils_dst::set(dst, i, BitUtils_left::get(left, i) ^ BitUtils_right::get(right, i));
+				}
 			}
 		}
 
@@ -905,10 +1078,40 @@ namespace BitUtils {
 			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst>, bool > = true
 		>
 		static void bitwise_not(const void* const src, void* const dst) {
-			if (src != dst)
-				copy<BitUtils_src, BitUtils_dst>(src, dst);
-			for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
-				*BitUtils_dst::getPage(dst, i) = ~(*BitUtils_dst::getPage(dst, i));
+			if constexpr (_BITUITLS_USE_SAFE_FUNCTIONS2(BitUtils_src, BitUtils_dst))
+				bitwise_not_s<BitUtils_src, BitUtils_dst>(src, dst);
+			else {
+				if (src != dst)
+					copy<BitUtils_src, BitUtils_dst>(src, dst);
+				for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
+					*BitUtils_dst::getPage(dst, i) = ~(*BitUtils_dst::getPage(dst, i));
+				}
+			}
+		}
+
+		template <
+			class BitUtils_src = BitUtils,
+			class BitUtils_dst = BitUtils,
+			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_src>, bool > = true,
+			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_dst>, bool > = true
+		>
+		static void bitwise_not_s(const void* const src, void* const dst) {
+			if constexpr (
+				!_BITUITLS_USE_SAFE_FUNCTIONS2(BitUtils_src, BitUtils_dst) &&
+				!is_soft_bounded
+			) {
+				bitwise_not<BitUtils_src, BitUtils_dst>(src, dst);
+			}
+			else {
+				if (src == dst) {
+					for (std::size_t i = 0; i < BitUtils_dst::n; i++) {
+						BitUtils_dst::flip(dst, i);
+					}
+				}
+				else {
+					BitUtils_dst::fill(dst, 1);
+					bitwise_xor_s<BitUtils_src, BitUtils_dst, BitUtils_dst>(src, dst, dst);
+				}
 			}
 		}
 
@@ -921,13 +1124,54 @@ namespace BitUtils {
 			bitwise_not(src, src);
 		}
 
+		static void bitwise_not_s(void* const src) {
+			bitwise_not_s(src, src);
+		}
+
+		static void bitshift_left(const void* const src, void* const dst, const std::size_t amount) {
+			if (n <= amount) {
+				fill_s(dst, 0);
+				return;
+			}
+
+			/*typedef bound<start_bit, end_bit - amount> BU_src;
+			typedef bound<start_bit + amount, end_bit> BU_dst;
+			typedef bound<start_bit, start_bit + amount> BU_invert;
+
+			for (std::size_t i = 0; i < BU_src::n; i++) {
+				BU_dst::set(dst, i, BU_src::get(src, i));
+			}
+			BU_invert::fill_s(dst, 0);*/
+		}
+
+		static void bitshift_left(void* const arr_ptr, const std::size_t amount) {
+			bitshift_left(arr_ptr, arr_ptr, amount);
+		}
+
+		static void bitshift_right(const void* const src, void* const dst, const std::size_t amount) {
+			if (n <= amount) {
+				fill_s(dst, 0);
+				return;
+			}
+
+			typedef bound<start_bit + amount, end_bit> BU_src;
+			typedef bound<start_bit, end_bit - amount> BU_dst;
+
+			//BU_src::copy<BU_src, BU_dst>(src, dst);
+			BitUtils<amount, end_bit - amount, end_bit>::fill_s(dst, 0);
+		}
+
+		static void bitshift_right(void* const arr_ptr, const std::size_t amount) {
+			bitshift_right(arr_ptr, arr_ptr, amount);
+		}
+
 		/// <summary>
 		/// Performs the bool() operation on the entire memory block (unless BitUtils is bounded, then it defaults to the safe version).
 		/// </summary>
 		/// <param name="src">the pointer to the source memory block.</param>
 		/// <returns>true if any of the bits are 1 and false if all the bits are 0.</returns>
 		static bool bool_op(const void* const src) {
-			if constexpr (start_bit || end_bit != _n)
+			if constexpr (is_bounded)
 				return bool_op_s(src);
 			else {
 				for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
@@ -944,7 +1188,7 @@ namespace BitUtils {
 		/// <param name="src">the pointer to the source memory block</param>
 		/// <returns>true if any of the bits are 1 and false if all the bits are 0.</returns>
 		static bool bool_op_s(const void* const src) {
-			if constexpr (start_bit == 0 && end_bit == _n)
+			if constexpr (!is_bounded)
 				return bool_op(src);
 			else {
 				for (std::size_t i = 0; i < n; i++) {
@@ -962,11 +1206,34 @@ namespace BitUtils {
 			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_right>, bool > = true
 		>
 		static bool equals(const void* const left, const void* const right) {
-			for (std::size_t i = 0; i < size; i++) {
-				if (bool(*getPage(left, i * CHAR_SIZE)) != bool(*getPage(right, i * CHAR_SIZE)))
-					return false;
+			if constexpr (_BITUITLS_USE_SAFE_FUNCTIONS2(BitUtils_left, BitUtils_right))
+				return equals_s<BitUtils_left, BitUtils_right>(left, right);
+			else {
+				for (std::size_t i = 0; i < size; i++) {
+					if (bool(*BitUtils_left::getPage(left, i * CHAR_SIZE)) != bool(*BitUtils_right::getPage(right, i * CHAR_SIZE)))
+						return false;
+				}
+				return true;
 			}
-			return true;
+		}
+
+		template <
+			class BitUtils_left = BitUtils,
+			class BitUtils_right = BitUtils,
+			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_left>, bool > = true,
+			std::enable_if_t < std::is_convertible_v<BitUtils, BitUtils_right>, bool > = true
+		>
+		static bool equals_s(const void* const left, const void* const right) {
+			if constexpr (!_BITUITLS_USE_SAFE_FUNCTIONS2(BitUtils_left, BitUtils_right))
+				return equals<BitUtils_left, BitUtils_right>(left, right);
+			else {
+				constexpr std::size_t min_n = (BitUtils_left::n < BitUtils_right::n) ? BitUtils_left::n : BitUtils_right::n;
+				for (std::size_t i = 0; i < min_n; i++) {
+					if (BitUtils_left::get(left, i) != BitUtils_right::get(right, i))
+						return false;
+				}
+				return true;
+			}
 		}
 
 		static void str(const void* const arr_ptr, char* const buf) {
@@ -1118,20 +1385,26 @@ namespace BitUtils {
 			const std::size_t other_n,
 			const std::size_t other_start_bit = 0,
 			const std::size_t other_end_bit = other_n,
-			std::enable_if_t < (other_n > 0), bool > = true,
-			std::enable_if_t < (other_start_bit < other_n), bool > = true,
-			std::enable_if_t < (other_end_bit <= other_n), bool > = true,
-			std::enable_if_t < (other_start_bit < other_end_bit), bool > = true,
-			std::enable_if_t < (other_end_bit - other_start_bit) >= n, bool > = true
+			std::enable_if_t <
+				(other_n > 0) &&
+				(other_start_bit < other_n) &&
+				(other_end_bit <= other_n) &&
+				(other_start_bit < other_end_bit) &&
+				(other_end_bit - other_start_bit) >= n,
+				bool 
+			> = true
 		>
 		operator BitUtils<other_n, other_start_bit, other_end_bit>() const {
 			return BitUtils<other_n, other_start_bit, other_end_bit>();
 		}
 	};
-#endif
+#undef _BITUITLS_USE_SAFE_FUNCTIONS
+#undef _BITUITLS_USE_SAFE_FUNCTIONS2
+#endif // C++17
+#undef _BITUTILS_IS_LITTLE_ENDIAN
 };
 #else // C++98 or error
-#error If you're using VC++, use the /Zc:__cplusplus command line argument. Or you could just remove the preprocessor stuff. That works too.
+#error If you're using VC++, use the /Zc:__cplusplus command line argument. Or you could just remove the preprocessor stuff. That works too. All relevant preprocessor stuff should end with (where XX is the version number) // C++XX
 #endif // C++11
 
 #endif // BITUTILS_H

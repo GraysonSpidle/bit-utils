@@ -230,7 +230,7 @@ void BitUtils::copy(const void* const src,
 		src_start_bit == dst_start_bit &&
 		src_end_bit == dst_end_bit
 	) {
-		_validateBounds(src_n, src_start_bit, src_end_bit, src_start_bit);
+		_validateBounds(src_n, src_start_bit, src_end_bit, 0);
 #if defined(__GNUG__) || defined(_CRT_SECURE_NO_WARNINGS) // if you're using gcc or don't want to use memcpy_s
 		memcpy(dst, src, size(src_n));
 		return;
@@ -374,11 +374,14 @@ void BitUtils::bitwise_and_s(
 		min_n = (min_n < (dst_end_bit - dst_start_bit))
 			? min_n
 			: (dst_end_bit - dst_start_bit);
+		bool l, r;
 		for (std::size_t i = 0; i < min_n; i++) {
+			l = get(left, left_n, left_start_bit, left_start_bit + min_n, i);
+			r = get(right, right_n, right_start_bit, right_start_bit + min_n, i);
 			set(
 				dst, dst_n, dst_start_bit, dst_start_bit + min_n,
 				i,
-				get(left, left_n, left_start_bit, left_start_bit + min_n, i) & get(right, right_n, right_start_bit, right_start_bit + min_n, i)
+				l & r
 			);
 		}
 	}
@@ -397,6 +400,15 @@ void BitUtils::bitwise_and_s(
 		right, n, start_bit, end_bit,
 		dst, n, start_bit, end_bit
 	);
+}
+
+void BitUtils::bitwise_and_s(
+	const void* const left,
+	const void* const right,
+	void* const dst,
+	const std::size_t n
+) {
+	bitwise_and_s(left, right, dst, n, 0, n);
 }
 
 void BitUtils::bitwise_or(
@@ -507,7 +519,7 @@ void BitUtils::bitwise_or_s(
 			set(
 				dst, dst_n, dst_start_bit, dst_start_bit + min_n,
 				i,
-				get(left, left_n, left_start_bit, left_start_bit + min_n, i) | get(right, right_n, right_start_bit, right_start_bit + min_n, i)
+				get(left, left_n, left_start_bit, left_start_bit + min_n, i) || get(right, right_n, right_start_bit, right_start_bit + min_n, i)
 			);
 		}
 	}
@@ -541,6 +553,15 @@ void BitUtils::bitwise_or_s(
 	);
 }
 
+void BitUtils::bitwise_or_s(
+	const void* const left,
+	const void* const right,
+	void* const dst,
+	const std::size_t n
+) {
+	bitwise_or_s(left, right, dst, n, 0, n);
+}
+
 void BitUtils::bitwise_xor(
 	const void* const left,
 	const std::size_t left_n,
@@ -565,12 +586,7 @@ void BitUtils::bitwise_xor(
 	}
 	else {
 		if (left == right) {
-			if (left == dst)
-				return;
-			copy(
-				left, left_n, left_start_bit, left_end_bit,
-				dst, dst_n, dst_start_bit, dst_end_bit
-			);
+			fill(dst, dst_n, dst_start_bit, dst_end_bit, 0);
 			return;
 		}
 		std::size_t n = ((left_end_bit - left_start_bit) < (right_end_bit - right_start_bit))
@@ -599,6 +615,14 @@ void BitUtils::bitwise_xor(const void* const left,
 		right, right_n, 0, right_n,
 		dst, dst_n, 0, dst_n
 	);
+}
+
+void BitUtils::bitwise_xor(const void* const left,
+	const void* const right,
+	void* const dst,
+	const std::size_t n
+) {
+	bitwise_xor(left, n, 0, n, right, n, 0, n, dst, n, 0, n);
 }
 
 void BitUtils::bitwise_xor_s(
@@ -661,6 +685,15 @@ void BitUtils::bitwise_xor_s(
 	);
 }
 
+void BitUtils::bitwise_xor_s(
+	const void* const left,
+	const void* const right,
+	void* const dst,
+	std::size_t n
+) {
+	bitwise_xor_s(left, n, 0, n, right, n, 0, n, dst, n, 0, n);
+}
+
 void BitUtils::bitwise_not(
 	const void* const src,
 	const std::size_t src_n,
@@ -693,13 +726,12 @@ void BitUtils::bitwise_not(
 }
 
 void BitUtils::bitwise_not(const void* const src,
-	const std::size_t src_n,
 	void* const dst,
-	const std::size_t dst_n
+	const std::size_t n
 ) {
 	bitwise_not(
-		src, src_n, 0, src_n,
-		dst, dst_n, 0, dst_n
+		src, n, 0, n,
+		dst, n, 0, n
 	);
 }
 
@@ -752,6 +784,25 @@ void BitUtils::bitwise_not_s(
 	}
 }
 
+void BitUtils::bitwise_not_s(
+	const void* const src,
+	void* const dst,
+	const std::size_t n,
+	const std::size_t start_bit,
+	const std::size_t end_bit
+) {
+	bitwise_not_s(src, n, start_bit, end_bit, dst, n, start_bit, end_bit);
+}
+
+void BitUtils::bitwise_not_s(
+	void* const src,
+	const std::size_t n,
+	const std::size_t start_bit,
+	const std::size_t end_bit
+) {
+	bitwise_not_s(src, n, start_bit, end_bit, src, n, start_bit, end_bit);
+}
+
 bool BitUtils::bool_op(const void* const src,
 	const std::size_t n,
 	const std::size_t start_bit,
@@ -786,7 +837,7 @@ bool BitUtils::bool_op_s(const void* const src,
 		}
 
 		// Now evaluating each individual bit. Slow, but necessary.
-		for (std::size_t i = 0; i < n % CHAR_SIZE; i++) {
+		for (std::size_t i = 0; i < end_bit - start_bit; i++) {
 			if (get(src, n, start_bit, end_bit, i))
 				return true;
 		}

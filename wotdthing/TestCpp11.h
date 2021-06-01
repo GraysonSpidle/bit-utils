@@ -275,6 +275,9 @@ namespace TestCpp11 {
 
 		BitUtils::copy(src, dst, 10);
 
+		// src: 1111111111000000
+		// dst: 1111111111000000
+
 		for (std::size_t i = 0; i < 10; i++) {
 			assert(BitUtils::get(dst, 10, i));
 		}
@@ -283,11 +286,471 @@ namespace TestCpp11 {
 			assert(!BitUtils::get(dst, 16, i));
 		}
 
-		// src: 1111111111000000
-		// dst: 1111111111000000
+		BitUtils::copy(src, src, 16);
+
+		assert(BitUtils::compare(src, dst, 16) == 0);
 
 		free(src);
 		free(dst);
+	}
+
+	void test_bitwise_or() {
+		// Assuming get(), fill(), compare(), and the first part of copy() work as intended.
+		
+		void* left = calloc(2, 1);
+		void* right = malloc(2);
+		void* dst = malloc(2);
+
+		BitUtils::fill(right, 16, 1);
+
+		// left:  0000000000000000
+		// right: 1111111111111111
+
+		BitUtils::bitwise_or(left, right, dst, 16);
+		
+		// dst:   1111111111111111
+
+		assert(BitUtils::compare(right, dst, 16) == 0);
+
+		BitUtils::bitwise_or(left, left, dst, 16); // this is intentional.
+
+		// left:  0000000000000000
+		// right: 1111111111111111
+		// dst:   0000000000000000
+
+		assert(BitUtils::compare(left, dst, 16) == 0);
+
+		BitUtils::bitwise_or(left, left, left, 16);
+
+		// nothing changed
+
+		assert(BitUtils::compare(left, dst, 16) == 0);
+
+		free(left);
+		free(right);
+		free(dst);
+	}
+
+	void test_bitwise_or_s() {
+
+		void* left = calloc(2, 1);
+		void* right = malloc(2);
+		void* dst = malloc(2);
+
+		// left:  0000000000000000
+		// right: malloc
+		// dst:   malloc
+
+		BitUtils::bitwise_or_s(left, right, dst, 16);
+
+		// left:  0000000000000000
+		// right: malloc
+		// dst: should be the same as right
+
+		assert(BitUtils::compare(right, dst, 16) == 0);
+
+		BitUtils::fill(right, 16, 0);
+		for (std::size_t i = 0; i < 16; i += 2) {
+			BitUtils::flip(right, 16, i);
+		}
+		
+		for (std::size_t i = 1; i < 16; i += 2) {
+			BitUtils::flip(left, 16, i);
+		}
+
+		BitUtils::fill(dst, 16, 0);
+
+		BitUtils::bitwise_or_s(left, right, dst, 16, 5, 10);
+
+		// left:  0101010101010101
+		// right: 1010101010101010
+		// dst:   0000011111000000
+
+		for (std::size_t i = 0; i < 5; i++) {
+			assert(BitUtils::get(dst, 16, 5, 10, i));
+		}
+
+		BitUtils::bitwise_or_s(left, left, dst, 16);
+
+		// left:  0101010101010101
+		// right: 1010101010101010
+		// dst:   0101010101010101
+
+		assert(BitUtils::compare(left, dst, 16) == 0);
+
+		BitUtils::bitwise_or_s(left, right, right, 16, 5, 10);
+
+		// left:  0101010101010101
+		// right: 1010111111101010
+		// dst:   0101010101010101
+
+		for (std::size_t i = 0; i < 5; i++) {
+			assert(BitUtils::get(right, 16, i) == !bool(i % 2));
+		}
+		for (std::size_t i = 5; i < 10; i++) {
+			assert(BitUtils::get(right, 16, i));
+		}
+		for (std::size_t i = 10; i < 16; i++) {
+			assert(BitUtils::get(right, 16, i) == !bool(i % 2));
+		}
+
+		free(left);
+		free(right);
+		free(dst);
+	}
+
+	void test_copy2() {
+
+		void* src = calloc(2, 1);
+		void* dst = malloc(2);
+
+		BitUtils::fill(dst, 16, 1);
+		BitUtils::copy(src, 16, 0, 16, dst, 16, 0, 5);
+
+		// src: 0000000000000000
+		// dst: 0000011111111111
+
+		for (std::size_t i = 0; i < 5; i++) {
+			assert(!BitUtils::get(dst, 16, i));
+		}
+
+		BitUtils::copy(src, 16, 0, 16, dst, 16, 5, 11);
+
+		// src: 0000000000000000
+		// dst: 0000000000011111
+
+		for (std::size_t i = 0; i < 6; i++) {
+			assert(!BitUtils::get(dst, 16, 5, 11, i));
+		}
+
+		BitUtils::copy(src, 16, 0, 1, dst, 16, 12, 16);
+
+		// src: 0000000000000000
+		// dst: 0000000000010111
+
+		assert(BitUtils::get(dst, 16, 11));
+		assert(!BitUtils::get(dst, 16, 12));
+		for (std::size_t i = 0; i < 3; i++) {
+			assert(BitUtils::get(dst, 16, 13, 16, i));
+		}
+
+		free(src);
+		free(dst);
+	}
+
+	void test_bitwise_and() {
+		void* left = calloc(2, 1);
+		void* right = malloc(2);
+		void* dst = malloc(2);
+
+		// left:  0000000000000000
+		// right: malloc
+		// dst:   malloc
+
+		BitUtils::bitwise_and(left, right, dst, 16);
+
+		// left:  0000000000000000
+		// right: malloc
+		// dst:   0000000000000000
+
+		for (std::size_t i = 0; i < 16; i++) {
+			assert(!BitUtils::get(dst, 16, i));
+		}
+
+		BitUtils::fill(right, 16, 0);
+		for (std::size_t i = 0; i < 16; i += 2) {
+			BitUtils::flip(right, 16, i);
+		}
+
+		BitUtils::bitwise_and(left, right, dst, 16);
+
+		// left:  0000000000000000
+		// right: 1010101010101010
+		// dst:   0000000000000000
+
+		assert(BitUtils::compare(left, dst, 16) == 0);
+
+		BitUtils::fill(dst, 16, 1);
+		for (std::size_t i = 1; i < 16; i += 2) {
+			BitUtils::flip(left, 16, i);
+		}
+
+		BitUtils::bitwise_and(left, right, dst, 16);
+
+		// left:  0101010101010101
+		// right: 1010101010101010
+		// dst:   0000000000000000
+
+		for (std::size_t i = 0; i < 16; i++) {
+			assert(!BitUtils::get(dst, 16, i));
+		}
+
+		free(left);
+		free(right);
+		free(dst);
+	}
+
+	void test_bitwise_and_s() {
+		void* left = calloc(2, 1);
+		void* right = malloc(2);
+		void* dst = malloc(2);
+
+		// left:  0000000000000000
+		// right: malloc
+		// dst:   malloc
+
+		BitUtils::bitwise_and_s(left, right, dst, 16);
+
+		// left:  0000000000000000
+		// right: malloc
+		// dst:   0000000000000000
+
+		for (std::size_t i = 0; i < 16; i++) {
+			assert(!BitUtils::get(dst, 16, i));
+		}
+
+		BitUtils::fill(left, 16, 0);
+		BitUtils::fill_s(left, 16, 5, 10, 1);
+		BitUtils::fill(right, 16, 0);
+		BitUtils::bitwise_and_s(left, right, dst, 16, 5, 10);
+
+		// left:  0000011111000000
+		// right: 0000000000000000
+		// dst:   0000000000000000
+
+		for (std::size_t i = 0; i < 16; i++) {
+			assert(!BitUtils::get(dst, 16, i));
+		}
+
+		BitUtils::copy(left, 16, 5, 10, right, 16, 6, 11);
+		BitUtils::bitwise_and_s(left, 16, 5, 10, right, 16, 6, 11, dst, 16, 7, 12);
+
+		// left:  0000011111000000
+		// right: 0000001111100000
+		// dst:   0000000111110000
+
+		for (std::size_t i = 7; i < 12; i++) {
+			assert(BitUtils::get(dst, 16, i));
+		}
+
+		BitUtils::bitwise_and_s(left, 16, 5, 10, left, 16, 6, 11, dst, 16, 5, 10);
+
+		// left:  0000011111000000
+		// right: 0000001111100000
+		// dst:   000001111100000
+
+		assert(BitUtils::compare(left, dst, 16) == 0);
+
+		free(left);
+		free(right);
+		free(dst);
+	}
+
+	void test_bitwise_xor() {
+		void* left = malloc(2);
+		void* right = malloc(2);
+		void* dst = malloc(2);
+
+		// left:  malloc
+		// right: malloc
+		// dst:   malloc
+
+		BitUtils::bitwise_xor(left, left, left, 16); // fun fact: in assembly this is how to zero out memory
+
+		// left:  0000000000000000
+		// right: malloc
+		// dst:   malloc 
+
+		for (std::size_t i = 0; i < 16; i++) {
+			assert(!BitUtils::get(left, 16, i));
+		}
+
+		BitUtils::bitwise_xor(left, right, dst, 16);
+
+		// left:  0000000000000000
+		// right: malloc
+		// dst:   same as right
+
+		assert(BitUtils::compare(right, dst, 16) == 0);
+
+		BitUtils::fill(left, 16, 1);
+		BitUtils::fill(right, 16, 1);
+
+		BitUtils::bitwise_xor(left, right, dst, 16);
+
+		// left:  1111111111111111
+		// right: 1111111111111111
+		// dst:   0000000000000000
+
+		for (std::size_t i = 0; i < 16; i++) {
+			assert(!BitUtils::get(dst, 16, i));
+		}
+
+		BitUtils::bitwise_xor(dst, dst, dst, 16);
+
+		// nothing changed
+
+		for (std::size_t i = 0; i < 16; i++) {
+			assert(!BitUtils::get(dst, 16, i));
+		}
+	}
+
+	void test_bitwise_xor_s() {
+		void* left = malloc(2);
+		void* right = malloc(2);
+		void* dst = malloc(2);
+
+		// left:  malloc
+		// right: malloc
+		// dst:   malloc
+
+		BitUtils::bitwise_xor_s(left, left, left, 16);
+
+		// left:  0000000000000000
+		// right: malloc
+		// dst:   malloc 
+
+		for (std::size_t i = 0; i < 16; i++) {
+			assert(!BitUtils::get(left, 16, i));
+		}
+
+		BitUtils::bitwise_xor_s(right, right, right, 16, 1, 4);
+		BitUtils::bitwise_xor_s(right, right, right, 16, 5, 10);
+		BitUtils::bitwise_xor_s(right, right, right, 16, 12, 15);
+
+		// left:  0000000000000000
+		// right: ?000?00000??000?
+		// dst:   malloc
+
+		for (std::size_t i = 1; i < 4; i++) {
+			assert(!BitUtils::get(right, 16, i));
+		}
+		for (std::size_t i = 5; i < 10; i++) {
+			assert(!BitUtils::get(right, 16, i));
+		}
+		for (std::size_t i = 12; i < 15; i++) {
+			assert(!BitUtils::get(right, 16, i));
+		}
+
+
+		for (std::size_t i = 2; i < 16; i += 2) {
+			BitUtils::flip(left, 16, i);
+		}
+
+		for (std::size_t i = 3; i < 16; i += 3) {
+			BitUtils::flip(left, 16, i);
+		}
+
+		BitUtils::fill(right, 16, 0);
+
+		for (std::size_t i = 0; i < 16; i += 4) {
+			BitUtils::flip(right, 16, i);
+		}
+
+		for (std::size_t i = 5; i < 16; i += 5) {
+			BitUtils::flip(right, 16, i);
+		}
+
+		BitUtils::bitwise_xor_s(left, 16, 5, 10, right, 16, 8, 13, dst, 16, 0, 5);
+
+		// left:  0011100011100011
+		// right: 1000110010101001
+		// dst:   10110???????????
+
+		assert(BitUtils::get(dst, 16, 0));
+		assert(!BitUtils::get(dst, 16, 1));
+		assert(BitUtils::get(dst, 16, 2));
+		assert(BitUtils::get(dst, 16, 3));
+		assert(!BitUtils::get(dst, 16, 4));
+
+		free(left);
+		free(right);
+		free(dst);
+	}
+
+	void test_bitwise_not() {
+		void* src = calloc(2, 1);
+		void* dst = malloc(2);
+
+		BitUtils::bitwise_not(src, dst, 16);
+
+		// src: 0000000000000000
+		// dst: 1111111111111111
+
+		for (std::size_t i = 0; i < 16; i++) {
+			assert(BitUtils::get(dst, 16, i));
+		}
+
+		BitUtils::bitwise_not(src, 10);
+
+		// src: 1111111111000000
+		// dst: 1111111111111111
+
+		for (std::size_t i = 0; i < 10; i++) {
+			assert(BitUtils::get(dst, 16, i));
+		}
+		for (std::size_t i = 10; i < 16; i++) {
+			assert(!BitUtils::get(dst, 16, i));
+		}
+
+		free(src);
+		free(dst);
+	}
+
+	void test_bool_op() {
+		void* block = calloc(2, 1);
+
+		// block: 0000000000000000
+
+		assert(!BitUtils::bool_op(block, 16));
+
+		BitUtils::flip(block, 16, 1);
+
+		// block: 0100000000000000
+
+		assert(BitUtils::bool_op(block, 16));
+
+		BitUtils::fill(block, 16, 1);
+
+		// block: 1111111111111111
+		
+		assert(BitUtils::bool_op(block, 16));
+
+		BitUtils::flip(block, 16, 10);
+
+		// block: 1111111111011111
+
+		assert(BitUtils::bool_op(block, 16));
+
+		free(block);
+	}
+
+	void test_bool_op_s() {
+		void* block = calloc(2, 1);
+
+		// block: 0000000000000000
+
+		assert(!BitUtils::bool_op_s(block, 16));
+
+		BitUtils::fill(block, 10, 1);
+
+		// block: 1111111111000000
+
+		assert(BitUtils::bool_op_s(block, 16));
+		assert(BitUtils::bool_op_s(block, 10));
+		assert(!BitUtils::bool_op_s(block, 16, 10, 16));
+		
+		BitUtils::fill(block, 10, 0);
+		BitUtils::fill(block, 16, 10, 16, 1);
+
+		// block: 0000000000111111
+
+		assert(BitUtils::bool_op_s(block, 16));
+		assert(!BitUtils::bool_op_s(block, 10));
+		assert(BitUtils::bool_op_s(block, 16, 0, 11));
+		assert(BitUtils::bool_op_s(block, 16, 10, 16));
+
+		free(block);
 	}
 
 	void test_everything() {
@@ -299,6 +762,16 @@ namespace TestCpp11 {
 		test_compare();
 		test_compare_s();
 		test_copy();
+		test_bitwise_or();
+		test_bitwise_or_s();
+		test_copy2();
+		test_bitwise_and();
+		test_bitwise_and_s();
+		test_bitwise_xor();
+		test_bitwise_xor_s();
+		test_bitwise_not();
+		test_bool_op();
+		test_bool_op_s();
 	}
 };
 

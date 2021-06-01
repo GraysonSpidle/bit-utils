@@ -227,6 +227,13 @@ namespace BitUtils {
 		const std::size_t end_bit
 	);
 
+	void bitwise_and_s(
+		const void* const left,
+		const void* const right,
+		void* const dst,
+		const std::size_t n
+	);
+
 	/* Does the | bitwise operation on two memory blocks and puts the result in the destination memory block.
 	This is the equivalent of: dst = left | right
 	*
@@ -285,6 +292,13 @@ namespace BitUtils {
 		const std::size_t end_bit
 	);
 
+	void bitwise_or_s(
+		const void* const left,
+		const void* const right,
+		void* const dst,
+		const std::size_t n
+	);
+
 	/* Does the ^ bitwise operation on two memory blocks and puts the result in the destination memory block.
 	This is the equivalent of: dst = left ^ right
 	*
@@ -314,6 +328,11 @@ namespace BitUtils {
 		void* const dst,
 		const std::size_t dst_n);
 
+	void bitwise_xor(const void* const left,
+		const void* const right,
+		void* const dst,
+		const std::size_t n);
+
 	void bitwise_xor_s(
 		const void* const left,
 		const std::size_t left_n,
@@ -338,6 +357,13 @@ namespace BitUtils {
 		std::size_t end_bit
 	);
 
+	void bitwise_xor_s(
+		const void* const left,
+		const void* const right,
+		void* const dst,
+		std::size_t n
+	);
+
 	/* Does the ~ bitwise operation on a memory blocks and puts the result in the destination memory block.
 	This is the equivalent of: dst = ~arr
 	*
@@ -356,9 +382,8 @@ namespace BitUtils {
 		const std::size_t dst_end_bit);
 
 	void bitwise_not(const void* const src,
-		const std::size_t src_n,
 		void* const dst,
-		const std::size_t dst_n);
+		const std::size_t n);
 
 	void bitwise_not(void* const src,
 		const std::size_t n,
@@ -376,6 +401,17 @@ namespace BitUtils {
 		const std::size_t dst_n,
 		const std::size_t dst_start_bit,
 		const std::size_t dst_end_bit);
+
+	void bitwise_not_s(const void* const src,
+		void* const dst,
+		const std::size_t n,
+		const std::size_t start_bit,
+		const std::size_t end_bit);
+
+	void bitwise_not_s(void* const src,
+		const std::size_t n,
+		const std::size_t start_bit,
+		const std::size_t end_bit);
 
 
 	/* Evaluates the memory block as a bool.

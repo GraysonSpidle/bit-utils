@@ -8,33 +8,27 @@
 
 #define IS_LITTLE_ENDIAN (1 << 1) > 1
 
-/* Test in this order:
-* get()
-* flip()
-* set()
-* fill()
-* fill_s()
-* copy()
-*/
-
 namespace TestCpp11 {
 	void test_get() {
 		void* block = malloc(2);
 #if IS_LITTLE_ENDIAN
-		* ((unsigned char*)block) = 170;
+		*((unsigned char*)block) = 170;
 		*((unsigned char*)block + 1) = 170;
 #else
-		* ((unsigned char*)block) = 85;
+		*((unsigned char*)block) = 85;
 		*((unsigned char*)block + 1) = 85;
 #endif
+		// 01010101
+
+		assert(BitUtils::get(block, 1, 1, 2, 0) == true);
 
 		for (std::size_t start = 0; start < 15; start++) {
 			for (std::size_t end = start + 1; end <= 16; end++) {
 				for (std::size_t i = start; i < end; i++) {
-					assert(BitUtils::get(block, 16, i) == !bool(i % 2)); // unbounded
-					assert(BitUtils::get(block, i + 1, i) == !bool(i % 2)); // soft bounded
-					assert(BitUtils::get(block, end - start, start, end, i) == !bool(i % 2)); // bounded
-					assert(BitUtils::get(block, 16, start, end, i) == !bool(i % 2)); // bounded
+					assert(BitUtils::get(block, 16, i) == bool(i % 2)); // unbounded
+					assert(BitUtils::get(block, i + 1, i) == bool(i % 2)); // soft bounded
+					assert(BitUtils::get(block, 1, i, i + 1, 0) == bool(i % 2)); // bounded
+					assert(BitUtils::get(block, 16, start, end, i - start) == bool(i % 2)); // bounded
 				}
 			}
 		}
@@ -57,22 +51,22 @@ namespace TestCpp11 {
 		// 1111111111111111
 
 		for (std::size_t i = 0; i < 16; i++) { // singleton test
-			BitUtils::flip(block, 16, i, i + 1, i);
+			BitUtils::flip(block, 16, i, i + 1, 0);
 			assert(!BitUtils::get(block, 16, i));
 		}
 
 		// 0000000000000000
 
 		for (std::size_t i = 0; i < 15; i++) { // singleton test 2
-			BitUtils::flip(block, 15, i, i + 1, i);
+			BitUtils::flip(block, 15, i, i + 1, 0);
 			assert(BitUtils::get(block, 15, i));
 		}
 
 		// 1111111111111110
 
 		// singleton test 3
-		BitUtils::flip(block, 1, 15, 16, 15);
-		assert(BitUtils::get(block, 1, 15, 16, 15));
+		BitUtils::flip(block, 1, 15, 16, 0);
+		assert(BitUtils::get(block, 1, 15, 16, 0));
 
 		// 1111111111111111
 
@@ -134,22 +128,20 @@ namespace TestCpp11 {
 		for (std::size_t i = 0; i < 10; i++) {
 			assert(BitUtils::get(block, 10, i));
 		}
-		for (std::size_t i = 10; i < 16; i++) {
-			assert(!BitUtils::get(block, 16, i));
-		}
 
 		// 1111111111000000
 
 		// bounded test
-		BitUtils::fill(block, 5, 5, 10, 0);
+
+		BitUtils::fill(block, 16, 5, 10, 0);
 		for (std::size_t i = 0; i < 5; i++) {
-			assert(!BitUtils::get(block, 5, 5, 10, i));
+			assert(!BitUtils::get(block, 16, 5, 10, i));
 		}
 		for (std::size_t i = 0; i < 5; i++) {
-			assert(BitUtils::get(block, 5, 0, 5, i));
+			assert(BitUtils::get(block, 16, 0, 5, i));
 		}
 		for (std::size_t i = 0; i < 6; i++) {
-			assert(!BitUtils::get(block, 6, 10, 16, i));
+			assert(!BitUtils::get(block, 16, 10, 16, i));
 		}
 
 		// 1111100000000000
@@ -161,6 +153,8 @@ namespace TestCpp11 {
 		// Assuming get() and set() work as intended.
 
 		void* block = malloc(2);
+
+		// Dunno what the bit array looks like because we're using malloc
 
 		// unbounded test
 		BitUtils::fill_s(block, 16, 0);
@@ -198,19 +192,99 @@ namespace TestCpp11 {
 		free(block);
 	}
 
+	void test_compare() {
+		void* left = calloc(2, 1);
+		void* right = calloc(2, 1);
+
+		// left:  0000000000000000
+		// right: 0000000000000000
+
+		assert(BitUtils::compare(left, right, 16) == 0);
+
+		BitUtils::flip(left, 16, 0);
+
+		// left:  1000000000000000
+		// right: 0000000000000000
+
+		assert(BitUtils::compare(left, right, 16) > 0);
+
+		BitUtils::fill_s(right, 16, 0, 2, 1);
+
+		// left:  1000000000000000
+		// right: 1100000000000000
+
+		assert(BitUtils::compare(left, right, 16) < 0);
+
+		free(left);
+		free(right);
+	}
+
+	void test_compare_s() {
+		void* left = calloc(2, 1);
+		void* right = calloc(2, 1);
+
+		// left:  0000000000000000
+		// right: 0000000000000000
+
+		assert(BitUtils::compare_s(left, right, 16) == 0);
+
+		BitUtils::fill_s(left, 16, 5, 10, 1);
+		BitUtils::fill_s(right, 16, 6, 11, 1);
+
+		// left:  0000011111000000
+		// right: 0000001111100000
+
+		assert(BitUtils::compare_s(left, right, 16, 5, 10) > 0);
+		assert(BitUtils::compare_s(left, right, 16, 5, 16) > 0);
+		assert(BitUtils::compare_s(left, right, 16, 6, 11) < 0);
+		assert(BitUtils::compare_s(left, right, 16, 6, 16) < 0);
+
+		free(left);
+		free(right);
+	}
+
 	void test_copy() {
 		// Assuming get() and fill() work as intended.
 
 		// We're only testing part of copy() because the second part relies on another function
 		// that we have yet to test
 
-		void* src = malloc(2);
+		void* src = calloc(2, 1);
 		void* dst = malloc(2);
+
+		BitUtils::fill(dst, 16, 1);
+
+		// src: 0000000000000000
+		// dst: 1111111111111111
 
 		// only testing when both blocks have the same bounds and sizes
 
+		BitUtils::copy(src, dst, 16);
 
+		// src: 0000000000000000
+		// dst: 0000000000000000
 
+		for (std::size_t i = 0; i < 16; i++) {
+			assert(!BitUtils::get(dst, 16, i));
+		}
+
+		BitUtils::fill(src, 10, 1);
+
+		// src: 1111111111000000
+		// dst: 0000000000000000
+
+		BitUtils::copy(src, dst, 10);
+
+		for (std::size_t i = 0; i < 10; i++) {
+			assert(BitUtils::get(dst, 10, i));
+		}
+
+		for (std::size_t i = 10; i < 16; i++) {
+			assert(!BitUtils::get(dst, 16, i));
+		}
+
+		// src: 1111111111000000
+		// dst: 1111111111000000
 
 		free(src);
 		free(dst);
@@ -222,6 +296,8 @@ namespace TestCpp11 {
 		test_set();
 		test_fill();
 		test_fill_s();
+		test_compare();
+		test_compare_s();
 		test_copy();
 	}
 };

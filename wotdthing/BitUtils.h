@@ -199,11 +199,9 @@ namespace BitUtils {
 		const std::size_t dst_end_bit);
 
 	void bitwise_and(const void* const left,
-		const std::size_t left_n,
 		const void* const right,
-		const std::size_t right_n,
 		void* const dst,
-		const std::size_t dst_n);
+		const std::size_t n);
 
 	void bitwise_and_s(
 		const void* const left,
@@ -257,6 +255,11 @@ namespace BitUtils {
 		const std::size_t right_n,
 		void* const dst,
 		const std::size_t dst_n);
+
+	void bitwise_or(const void* const left,
+		const void* const right,
+		void* const dst,
+		const std::size_t n);
 
 	void bitwise_or_s(
 		const void* const left,
@@ -449,6 +452,10 @@ namespace BitUtils {
 		const std::size_t start_bit,
 		const std::size_t end_bit);
 
+	int compare(const void* const left,
+		const void* const right,
+		const std::size_t n);
+
 	int compare_s(const void* const left,
 		const std::size_t left_n,
 		const std::size_t left_start_bit,
@@ -457,6 +464,16 @@ namespace BitUtils {
 		const std::size_t right_n,
 		const std::size_t right_start_bit,
 		const std::size_t right_end_bit);
+
+	int compare_s(const void* const left,
+		const void* const right,
+		const std::size_t n,
+		const std::size_t start_bit,
+		const std::size_t end_bit);
+
+	int compare_s(const void* const left,
+		const void* const right,
+		const std::size_t n);
 
 	/* Performs the == operation on two memory blocks.
 	* 
@@ -564,11 +581,17 @@ namespace BitUtils {
 		const std::size_t end_bit
 	);
 
+	std::string str(const void* const src,
+		const std::size_t n);
+
 	std::wstring wstr(const void* const src,
 		const std::size_t n,
 		const std::size_t start_bit,
 		const std::size_t end_bit
 	);
+
+	std::wstring wstr(const void* const src,
+		const std::size_t n);
 
 	/* For each function that iterates over pages in a memory block. Pages (in reference to "memory paging") are defined by the user.
 	For scenarios where it is impossible to evenly divide up the memory block into pages, it will just repeat some of the memory at the end.
@@ -766,9 +789,9 @@ namespace BitUtils {
 			}
 
 			if constexpr (size == 1)
-				return reinterpret_cast<unsigned char*>(arr_ptr);
+				return reinterpret_cast<const unsigned char*>(arr_ptr);
 			else {
-				return reinterpret_cast<unsigned char*>(arr_ptr) + ((i + start_bit) / CHAR_SIZE);
+				return reinterpret_cast<const unsigned char*>(arr_ptr) + ((i + start_bit) / CHAR_SIZE);
 			}
 		}
 

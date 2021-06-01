@@ -10,7 +10,7 @@ constexpr const std::size_t CHAR_SIZE = __CHAR_BIT__;
 #endif // __CHAR_BIT__
 #endif // CHAR_BIT
 
-// Preprocessor macro. Checks if the current machine is big endian or little endian. 
+// Checks if the current machine is big endian or little endian. 
 #define _BITUTILS_IS_LITTLE_ENDIAN (1 << 1) > 1
 
 inline bool is_bounded(
@@ -18,7 +18,7 @@ inline bool is_bounded(
 	const std::size_t start_bit,
 	const std::size_t end_bit
 ) {
-	return (end_bit - start_bit) != n;
+	return start_bit != 0 || end_bit != n;
 }
 
 inline bool is_soft_bounded(
@@ -38,7 +38,7 @@ inline bool use_safe_function(
 	std::size_t len = strlen(func_name);
 	bool safe = std::string(func_name).substr(len - 2) == "_s";
 
-	if (is_bounded(n, start_bit, end_bit) && !safe)
+	if (is_bounded(n, start_bit, end_bit))
 		return true;
 	else if (is_soft_bounded(n, start_bit, end_bit))
 		return safe;
@@ -48,18 +48,19 @@ inline bool use_safe_function(
 
 
 inline void _validateBounds(const std::size_t n, const std::size_t start_bit, const std::size_t end_bit, const std::size_t i) {
-	// 0 <= start_bit < end_bit <= n
-	// i + start_bit < end_bit
+	// 0 <= start_bit < end_bit
+	// end_bit - start_bit <= n
+	// i < end_bit - start_bit
 	if (n == 0) // guarantees n > 0 (unsigned numbers only)
 		throw std::invalid_argument("n cannot be == 0.");
 	if (start_bit >= end_bit) // guarantees start_bit < end_bit
 		throw std::invalid_argument("start_bit cannot be >= end_bit");
-	if (end_bit > n) // guarantees end_bit <= n
+	if (end_bit - start_bit > n) // guarantees end_bit - start_bit <= n
 		throw std::invalid_argument("end_bit cannot be > n");
 	
 	// i is the local index for the unbounded/bounded bit array.
 
-	if (i + start_bit >= end_bit) { // guarantees i + start_bit < end_bit
+	if (i >= end_bit - start_bit) {
 		if (is_bounded(n, start_bit, end_bit))
 			throw std::out_of_range("i is out of range for a bounded memory block with " + std::to_string(end_bit - start_bit) + " bits to work with.");
 		else if (is_soft_bounded(n, start_bit, end_bit))
@@ -71,7 +72,7 @@ inline void _validateBounds(const std::size_t n, const std::size_t start_bit, co
 
 unsigned char* const getPage(void* const src, const std::size_t _N, const std::size_t start_bit, const std::size_t end_bit, const std::size_t i) {
 	_validateBounds(_N, start_bit, end_bit, i);
-	if (!is_bounded(_N, start_bit, end_bit) && _N == CHAR_SIZE)
+	if (!is_bounded(_N, start_bit, end_bit) && end_bit - start_bit == CHAR_SIZE)
 		return (unsigned char*)src;
 	else
 		return (unsigned char*)src + ((i + start_bit) / CHAR_SIZE);
@@ -79,7 +80,7 @@ unsigned char* const getPage(void* const src, const std::size_t _N, const std::s
 
 const unsigned char* const getPage(const void* const src, const std::size_t _N, const std::size_t start_bit, const std::size_t end_bit, const std::size_t i) {
 	_validateBounds(_N, start_bit, end_bit, i);
-	if (!is_bounded(_N, start_bit, end_bit) && _N == CHAR_SIZE)
+	if (!is_bounded(_N, start_bit, end_bit) && end_bit - start_bit == CHAR_SIZE)
 		return (unsigned char*)src;
 	else
 		return (unsigned char*)src + ((i + start_bit) / CHAR_SIZE);
@@ -103,11 +104,10 @@ bool BitUtils::get(const void* const src,
 	const std::size_t end_bit,
 	const std::size_t i
 ) {
-	_validateBounds(n, start_bit, end_bit, i);
 #if _BITUTILS_IS_LITTLE_ENDIAN
-	return *getPage(src, n, start_bit, end_bit, i) & ((std::size_t)1 << (i % CHAR_SIZE));
+	return *getPage(src, n, start_bit, end_bit, i) & ((std::size_t)1 << ((i + start_bit) % CHAR_SIZE));
 #else
-	return *getPage(src, n, start_bit, end_bit, i) & ((std::size_t)1 >> (i % CHAR_SIZE));
+	return *getPage(src, n, start_bit, end_bit, i) & ((std::size_t)1 >> ((i + start_bit) % CHAR_SIZE));
 #endif
 }
 
@@ -124,11 +124,10 @@ void BitUtils::flip(void* const src,
 	const std::size_t end_bit,
 	const std::size_t i
 ) {
-	_validateBounds(n, start_bit, end_bit, i);
 #if _BITUTILS_IS_LITTLE_ENDIAN
-	*getPage(src, n, start_bit, end_bit, i) ^= ((std::size_t)1 << (i % CHAR_SIZE));
+	*getPage(src, n, start_bit, end_bit, i) ^= ((std::size_t)1 << ((i + start_bit) % CHAR_SIZE));
 #else
-	*getPage(src, n, start_bit, end_bit, i) ^= ((std::size_t)1 >> (i % CHAR_SIZE));
+	*getPage(src, n, start_bit, end_bit, i) ^= ((std::size_t)1 >> ((i + start_bit) % CHAR_SIZE));
 #endif
 }
 
@@ -149,9 +148,9 @@ void BitUtils::set(void* const src,
 	_validateBounds(n, start_bit, end_bit, i);
 	// Setting the bit to true regardless of its state
 #if _BITUTILS_IS_LITTLE_ENDIAN
-	*getPage(src, n, start_bit, end_bit, i) |= ((std::size_t)1 << (i % CHAR_SIZE));
+	*getPage(src, n, start_bit, end_bit, i) |= ((std::size_t)1 << ((i + start_bit) % CHAR_SIZE));
 #else
-	*getPage(src, n, start_bit, end_bit, i) |= ((std::size_t)1 >> (i % CHAR_SIZE));
+	*getPage(src, n, start_bit, end_bit, i) |= ((std::size_t)1 >> ((i + start_bit) % CHAR_SIZE));
 #endif
 	// Flipping the bit if user wants it to be false
 	if (!b)
@@ -174,8 +173,10 @@ void BitUtils::fill(void* const src,
 	const std::size_t end_bit,
 	const bool b
 ) {
-	if (use_safe_function(n, start_bit, end_bit, __func__))
+	if (use_safe_function(n, start_bit, end_bit, __func__) || is_soft_bounded(n, start_bit, end_bit)) {
 		fill_s(src, n, start_bit, end_bit, b);
+		return;
+	}
 
 	_validateBounds(n, start_bit, end_bit, 0);
 	if (n == CHAR_SIZE)
@@ -198,12 +199,12 @@ void BitUtils::fill_s(void* const src,
 	const bool b
 ) {
 	if (use_safe_function(n, start_bit, end_bit, __func__)) {
-		for (std::size_t i = 0; i < n; i++) {
+		for (std::size_t i = 0; i < end_bit - start_bit; i++) {
 			set(src, n, start_bit, end_bit, i, b);
 		}
 	}
 	else
-		fill(src, n, b);
+		fill(src, n, start_bit, end_bit, b);
 }
 
 void BitUtils::fill_s(void* const src,
@@ -231,10 +232,10 @@ void BitUtils::copy(const void* const src,
 	) {
 		_validateBounds(src_n, src_start_bit, src_end_bit, src_start_bit);
 #if defined(__GNUG__) || defined(_CRT_SECURE_NO_WARNINGS) // if you're using gcc or don't want to use memcpy_s
-		memcpy(dst, src, src_n * CHAR_SIZE);
+		memcpy(dst, src, size(src_n));
 		return;
 #else // if you're using vc++
-		memcpy_s(dst, dst_n * CHAR_SIZE, src, src_n * CHAR_SIZE);
+		memcpy_s(dst, size(dst_n), src, size(src_n));
 		return;
 #endif
 	}
@@ -305,6 +306,7 @@ void BitUtils::bitwise_and(
 			);
 			return;
 		}
+		// Finding the minimum n
 		std::size_t n = ((left_end_bit - left_start_bit) < (right_end_bit - right_start_bit))
 			? (left_end_bit - left_start_bit)
 			: (right_end_bit - right_start_bit);
@@ -320,16 +322,14 @@ void BitUtils::bitwise_and(
 }
 
 void BitUtils::bitwise_and(const void* const left,
-	const std::size_t left_n,
 	const void* const right,
-	const std::size_t right_n,
 	void* const dst,
-	const std::size_t dst_n
+	const std::size_t n
 ) {
 	bitwise_and(
-		left, left_n, 0, left_n,
-		right, right_n, 0, right_n,
-		dst, dst_n, 0, dst_n
+		left, n, 0, n,
+		right, n, 0, n,
+		dst, n, 0, n
 	);
 }
 
@@ -511,6 +511,19 @@ void BitUtils::bitwise_or_s(
 			);
 		}
 	}
+}
+
+void BitUtils::bitwise_or(
+	const void* const left,
+	const void* const right,
+	void* const dst,
+	const std::size_t n
+) {
+	bitwise_or(
+		left, n,
+		right, n,
+		dst, n
+	);
 }
 
 void BitUtils::bitwise_or_s(
@@ -874,9 +887,9 @@ int BitUtils::compare(const void* const left,
 		is_soft_bounded(left_n, left_start_bit, left_end_bit) ||
 		is_soft_bounded(right_n, right_start_bit, right_end_bit)
 	)
-		return memcmp(left, right, (left_n < right_n ? left_n : right_n));
+		return memcmp(left, right, size(left_n < right_n ? left_n : right_n));
 	else
-		return memcmp(left, right, left_n);
+		return memcmp(left, right, size(left_n));
 }
 
 int BitUtils::compare(const void* const left,
@@ -888,6 +901,14 @@ int BitUtils::compare(const void* const left,
 	return compare(
 		left, n, start_bit, end_bit,
 		right, n, start_bit, end_bit);
+}
+
+int BitUtils::compare(
+	const void* const left,
+	const void* const right,
+	const std::size_t n
+) {
+	return compare(left, right, n, 0, n);
 }
 
 int BitUtils::compare_s(
@@ -919,6 +940,27 @@ int BitUtils::compare_s(
 		}
 	}
 	return 0;
+}
+
+int BitUtils::compare_s(
+	const void* const left,
+	const void* const right,
+	const std::size_t n,
+	const std::size_t start_bit,
+	const std::size_t end_bit
+) {
+	return compare_s(
+		left, n, start_bit, end_bit,
+		right, n, start_bit, end_bit
+	);
+}
+
+int BitUtils::compare_s(
+	const void* const left,
+	const void* const right,
+	const std::size_t n
+) {
+	return compare_s(left, right, n, 0, n);
 }
 
 void BitUtils::str(const void* const src,
@@ -959,7 +1001,7 @@ void BitUtils::str(
 ) {
 	if (!n)
 		return;
-	for (std::size_t i = 0; i < size(n) * CHAR_SIZE; i++) {
+	for (std::size_t i = 0; i < end_bit - start_bit; i++) {
 		os << get(src, n, start_bit, end_bit, i) ? '1' : '0';
 	}
 }
@@ -973,6 +1015,10 @@ std::string BitUtils::str(
 	std::stringstream ss;
 	str(src, n, start_bit, end_bit, ss);
 	return ss.str();
+}
+
+std::string BitUtils::str(const void* const src, const std::size_t n) {
+	return str(src, n, 0, n);
 }
 
 void BitUtils::wstr(
@@ -997,6 +1043,10 @@ std::wstring BitUtils::wstr(const void* const src,
 	std::wstringstream wss;
 	wstr(src, n, start_bit, end_bit, wss);
 	return wss.str();
+}
+
+std::wstring BitUtils::wstr(const void* const src, const std::size_t n) {
+	return wstr(src, n, 0, n);
 }
 
 void BitUtils::for_each_byte(void* const begin, void* const end, void (*func)(unsigned char* pC)) {

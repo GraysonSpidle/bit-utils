@@ -24,12 +24,6 @@ void testCpp17();
 #endif // C++17
 
 int main(int argc, char * argv[]) {
-#if __cplusplus >= 201700 // C++17
-	std::cout << "C++ 17" << std::endl;
-	testCpp17();
-	std::cout << std::endl << std::endl;
-#endif // C++17
-	std::cout << "C++ 11" << std::endl << std::endl;
 	testCpp11();
 	return 0;
 }
@@ -43,10 +37,7 @@ void printBarThing(std::size_t start_bit, std::size_t n) {
 
 void testCpp11() {
 	std::cout << "Testing the C++11 version" << std::endl;
-	TestCpp11::test_get();
-	TestCpp11::test_flip();
-	TestCpp11::test_set();
-	TestCpp11::test_fill();
+	TestCpp11::test_everything();
 	std::cout << "All tests passed!" << std::endl;
 }
 

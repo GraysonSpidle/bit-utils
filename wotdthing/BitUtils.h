@@ -159,23 +159,6 @@ namespace BitUtils {
 		const std::size_t n,
 		const bool b);
 
-	/* Safely fills the memory block with 1s or 0s. Safely means that if you have a memory block with a size of 2 bytes, and you fill 15 bits with 1, then it'll only fill those 15 bits.
-	*
-	Parameters
-	* arr_ptr: the pointer to the memory block.
-	* n: the size of the memory block in bits. Doesn't have to be a log of 2.
-	* b: the state you want to set all the bits to.
-	*/
-	void fill_s(void* const src,
-		const std::size_t n,
-		const std::size_t start_bit,
-		const std::size_t end_bit,
-		const bool b);
-
-	void fill_s(void* const src,
-		const std::size_t n,
-		const bool b);
-
 	/* Does the & bitwise operation on two memory blocks and puts the result in the destination memory block.
 	This is the equivalent of: dst = left & right
 	*
@@ -203,36 +186,12 @@ namespace BitUtils {
 		void* const dst,
 		const std::size_t n);
 
-	void bitwise_and_s(
-		const void* const left,
-		const std::size_t left_n,
-		const std::size_t left_start_bit,
-		const std::size_t left_end_bit,
-		const void* const right,
-		const std::size_t right_n,
-		const std::size_t right_start_bit,
-		const std::size_t right_end_bit,
-		void* const dst,
-		const std::size_t dst_n,
-		const std::size_t dst_start_bit,
-		const std::size_t dst_end_bit
-	);
-
-	void bitwise_and_s(
-		const void* const left,
+	void bitwise_and(const void* const left,
 		const void* const right,
 		void* const dst,
 		const std::size_t n,
 		const std::size_t start_bit,
-		const std::size_t end_bit
-	);
-
-	void bitwise_and_s(
-		const void* const left,
-		const void* const right,
-		void* const dst,
-		const std::size_t n
-	);
+		const std::size_t end_bit);
 
 	/* Does the | bitwise operation on two memory blocks and puts the result in the destination memory block.
 	This is the equivalent of: dst = left | right
@@ -257,47 +216,16 @@ namespace BitUtils {
 		const std::size_t dst_end_bit);
 
 	void bitwise_or(const void* const left,
-		const std::size_t left_n,
 		const void* const right,
-		const std::size_t right_n,
 		void* const dst,
-		const std::size_t dst_n);
+		const std::size_t n,
+		const std::size_t start_bit,
+		const std::size_t end_bit);
 
 	void bitwise_or(const void* const left,
 		const void* const right,
 		void* const dst,
 		const std::size_t n);
-
-	void bitwise_or_s(
-		const void* const left,
-		const std::size_t left_n,
-		const std::size_t left_start_bit,
-		const std::size_t left_end_bit,
-		const void* const right,
-		const std::size_t right_n,
-		const std::size_t right_start_bit,
-		const std::size_t right_end_bit,
-		void* const dst,
-		const std::size_t dst_n,
-		const std::size_t dst_start_bit,
-		const std::size_t dst_end_bit
-	);
-
-	void bitwise_or_s(
-		const void* const left,
-		const void* const right,
-		void* const dst,
-		const std::size_t n,
-		const std::size_t start_bit,
-		const std::size_t end_bit
-	);
-
-	void bitwise_or_s(
-		const void* const left,
-		const void* const right,
-		void* const dst,
-		const std::size_t n
-	);
 
 	/* Does the ^ bitwise operation on two memory blocks and puts the result in the destination memory block.
 	This is the equivalent of: dst = left ^ right
@@ -322,47 +250,16 @@ namespace BitUtils {
 		const std::size_t dst_end_bit);
 
 	void bitwise_xor(const void* const left,
-		const std::size_t left_n,
 		const void* const right,
-		const std::size_t right_n,
 		void* const dst,
-		const std::size_t dst_n);
+		const std::size_t n,
+		const std::size_t start_bit,
+		const std::size_t end_bit);
 
 	void bitwise_xor(const void* const left,
 		const void* const right,
 		void* const dst,
 		const std::size_t n);
-
-	void bitwise_xor_s(
-		const void* const left,
-		const std::size_t left_n,
-		const std::size_t left_start_bit,
-		const std::size_t left_end_bit,
-		const void* const right,
-		const std::size_t right_n,
-		const std::size_t right_start_bit,
-		const std::size_t right_end_bit,
-		void* const dst,
-		const std::size_t dst_n,
-		const std::size_t dst_start_bit,
-		const std::size_t dst_end_bit
-	);
-
-	void bitwise_xor_s(
-		const void* const left,
-		const void* const right,
-		void* const dst,
-		std::size_t n,
-		std::size_t start_bit,
-		std::size_t end_bit
-	);
-
-	void bitwise_xor_s(
-		const void* const left,
-		const void* const right,
-		void* const dst,
-		std::size_t n
-	);
 
 	/* Does the ~ bitwise operation on a memory blocks and puts the result in the destination memory block.
 	This is the equivalent of: dst = ~arr
@@ -385,6 +282,12 @@ namespace BitUtils {
 		void* const dst,
 		const std::size_t n);
 
+	void bitwise_not(const void* const src,
+		void* const dst,
+		const std::size_t n,
+		const std::size_t start_bit,
+		const std::size_t end_bit);
+
 	void bitwise_not(void* const src,
 		const std::size_t n,
 		const std::size_t start_bit,
@@ -392,27 +295,6 @@ namespace BitUtils {
 
 	void bitwise_not(void* const src,
 		const std::size_t n);
-
-	void bitwise_not_s(const void* const src,
-		const std::size_t src_n,
-		const std::size_t src_start_bit,
-		const std::size_t src_end_bit,
-		void* const dst,
-		const std::size_t dst_n,
-		const std::size_t dst_start_bit,
-		const std::size_t dst_end_bit);
-
-	void bitwise_not_s(const void* const src,
-		void* const dst,
-		const std::size_t n,
-		const std::size_t start_bit,
-		const std::size_t end_bit);
-
-	void bitwise_not_s(void* const src,
-		const std::size_t n,
-		const std::size_t start_bit,
-		const std::size_t end_bit);
-
 
 	/* Evaluates the memory block as a bool.
 	This is similar to casting an int to a bool
@@ -428,22 +310,6 @@ namespace BitUtils {
 		const std::size_t end_bit);
 
 	bool bool_op(const void* const src,
-		const std::size_t n);
-
-	/* Safely evaluates the memory block as a bool. Safely means that it only evaluates the bits specified by n.
-	This is similar to casting an int to a bool
-	*
-	Parameters
-	* arr_ptr: the pointer to the memory block.
-	* n: the size of the memory block in bits. Doesn't have to be a log of 2.
-	Returns false if the specified bits are all 0 or returns true otherwise.
-	*/
-	bool bool_op_s(const void* const src,
-		const std::size_t n,
-		const std::size_t start_bit,
-		const std::size_t end_bit);
-
-	bool bool_op_s(const void* const src,
 		const std::size_t n);
 
 	/* Copies memory from one memory block to another.
@@ -492,25 +358,6 @@ namespace BitUtils {
 		const void* const right,
 		const std::size_t n);
 
-	int compare_s(const void* const left,
-		const std::size_t left_n,
-		const std::size_t left_start_bit,
-		const std::size_t left_end_bit,
-		const void* const right,
-		const std::size_t right_n,
-		const std::size_t right_start_bit,
-		const std::size_t right_end_bit);
-
-	int compare_s(const void* const left,
-		const void* const right,
-		const std::size_t n,
-		const std::size_t start_bit,
-		const std::size_t end_bit);
-
-	int compare_s(const void* const left,
-		const void* const right,
-		const std::size_t n);
-
 	/* Performs the == operation on two memory blocks.
 	* 
 	Parameters
@@ -533,21 +380,6 @@ namespace BitUtils {
 	bool equals(const void* left,
 		const void* const right,
 		const std::size_t n);
-
-	bool equals_s(const void* const left,
-		const std::size_t left_n,
-		const std::size_t left_start_bit,
-		const std::size_t left_end_bit,
-		const void* const right,
-		const std::size_t right_n,
-		const std::size_t right_start_bit,
-		const std::size_t right_end_bit);
-
-	bool equals_s(const void* const left,
-		const void* const right,
-		const std::size_t n,
-		const std::size_t start_bit,
-		const std::size_t end_bit);
 
 	/* Puts a string representation of the binary of the memory block into the supplied buffer.
 	Bit 0 will always be the left most number regardless if the machine is big or little endian.

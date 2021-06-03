@@ -129,7 +129,7 @@ namespace TestCpp11 {
 			assert(BitUtils::get(block, 10, i));
 		}
 
-		// 1111111111000000
+		// 1111111111111111
 
 		// bounded test
 
@@ -141,7 +141,7 @@ namespace TestCpp11 {
 			assert(BitUtils::get(block, 16, 0, 5, i));
 		}
 		for (std::size_t i = 0; i < 6; i++) {
-			assert(!BitUtils::get(block, 16, 10, 16, i));
+			assert(BitUtils::get(block, 16, 10, 16, i));
 		}
 
 		// 1111100000000000
@@ -157,15 +157,14 @@ namespace TestCpp11 {
 		// Dunno what the bit array looks like because we're using malloc
 
 		// unbounded test
-		BitUtils::fill_s(block, 16, 0);
+		BitUtils::fill(block, 16, 0, 16, 0);
 		for (std::size_t i = 0; i < 16; i++) {
 			assert(!BitUtils::get(block, 16, i));
 		}
 
 		// 0000000000000000
 
-		// soft bounded test
-		BitUtils::fill_s(block, 10, 1);
+		BitUtils::fill(block, 10, 0, 10, 1);
 		for (std::size_t i = 0; i < 10; i++) {
 			assert(BitUtils::get(block, 10, i));
 		}
@@ -176,7 +175,7 @@ namespace TestCpp11 {
 		// 1111111111000000
 
 		// bounded test
-		BitUtils::fill_s(block, 5, 5, 10, 0);
+		BitUtils::fill(block, 5, 5, 10, 0);
 		for (std::size_t i = 0; i < 5; i++) {
 			assert(!BitUtils::get(block, 5, 5, 10, i));
 		}
@@ -208,7 +207,7 @@ namespace TestCpp11 {
 
 		assert(BitUtils::compare(left, right, 16) > 0);
 
-		BitUtils::fill_s(right, 16, 0, 2, 1);
+		BitUtils::fill(right, 16, 0, 2, 1);
 
 		// left:  1000000000000000
 		// right: 1100000000000000
@@ -226,18 +225,18 @@ namespace TestCpp11 {
 		// left:  0000000000000000
 		// right: 0000000000000000
 
-		assert(BitUtils::compare_s(left, right, 16) == 0);
+		assert(BitUtils::compare(left, right, 16, 0, 16) == 0);
 
-		BitUtils::fill_s(left, 16, 5, 10, 1);
-		BitUtils::fill_s(right, 16, 6, 11, 1);
+		BitUtils::fill(left, 16, 5, 10, 1);
+		BitUtils::fill(right, 16, 6, 11, 1);
 
 		// left:  0000011111000000
 		// right: 0000001111100000
 
-		assert(BitUtils::compare_s(left, right, 16, 5, 10) > 0);
-		assert(BitUtils::compare_s(left, right, 16, 5, 16) > 0);
-		assert(BitUtils::compare_s(left, right, 16, 6, 11) < 0);
-		assert(BitUtils::compare_s(left, right, 16, 6, 16) < 0);
+		assert(BitUtils::compare(left, right, 16, 5, 10) > 0);
+		assert(BitUtils::compare(left, right, 16, 5, 16) > 0);
+		assert(BitUtils::compare(left, right, 16, 6, 11) < 0);
+		assert(BitUtils::compare(left, right, 16, 6, 16) < 0);
 
 		free(left);
 		free(right);
@@ -276,14 +275,14 @@ namespace TestCpp11 {
 		BitUtils::copy(src, dst, 10);
 
 		// src: 1111111111000000
-		// dst: 1111111111000000
+		// dst: 1111111111111111
 
 		for (std::size_t i = 0; i < 10; i++) {
 			assert(BitUtils::get(dst, 10, i));
 		}
 
 		for (std::size_t i = 10; i < 16; i++) {
-			assert(!BitUtils::get(dst, 16, i));
+			assert(BitUtils::get(dst, 16, i));
 		}
 
 		BitUtils::copy(src, src, 16);
@@ -341,7 +340,7 @@ namespace TestCpp11 {
 		// right: malloc
 		// dst:   malloc
 
-		BitUtils::bitwise_or_s(left, right, dst, 16);
+		BitUtils::bitwise_or(left, right, dst, 16, 0, 16);
 
 		// left:  0000000000000000
 		// right: malloc
@@ -360,7 +359,7 @@ namespace TestCpp11 {
 
 		BitUtils::fill(dst, 16, 0);
 
-		BitUtils::bitwise_or_s(left, right, dst, 16, 5, 10);
+		BitUtils::bitwise_or(left, right, dst, 16, 5, 10);
 
 		// left:  0101010101010101
 		// right: 1010101010101010
@@ -370,7 +369,7 @@ namespace TestCpp11 {
 			assert(BitUtils::get(dst, 16, 5, 10, i));
 		}
 
-		BitUtils::bitwise_or_s(left, left, dst, 16);
+		BitUtils::bitwise_or(left, left, dst, 16, 0, 16);
 
 		// left:  0101010101010101
 		// right: 1010101010101010
@@ -378,7 +377,7 @@ namespace TestCpp11 {
 
 		assert(BitUtils::compare(left, dst, 16) == 0);
 
-		BitUtils::bitwise_or_s(left, right, right, 16, 5, 10);
+		BitUtils::bitwise_or(left, right, right, 16, 5, 10);
 
 		// left:  0101010101010101
 		// right: 1010111111101010
@@ -499,7 +498,7 @@ namespace TestCpp11 {
 		// right: malloc
 		// dst:   malloc
 
-		BitUtils::bitwise_and_s(left, right, dst, 16);
+		BitUtils::bitwise_and(left, right, dst, 16, 0, 16);
 
 		// left:  0000000000000000
 		// right: malloc
@@ -510,9 +509,9 @@ namespace TestCpp11 {
 		}
 
 		BitUtils::fill(left, 16, 0);
-		BitUtils::fill_s(left, 16, 5, 10, 1);
+		BitUtils::fill(left, 16, 5, 10, 1);
 		BitUtils::fill(right, 16, 0);
-		BitUtils::bitwise_and_s(left, right, dst, 16, 5, 10);
+		BitUtils::bitwise_and(left, right, dst, 16, 5, 10);
 
 		// left:  0000011111000000
 		// right: 0000000000000000
@@ -523,7 +522,7 @@ namespace TestCpp11 {
 		}
 
 		BitUtils::copy(left, 16, 5, 10, right, 16, 6, 11);
-		BitUtils::bitwise_and_s(left, 16, 5, 10, right, 16, 6, 11, dst, 16, 7, 12);
+		BitUtils::bitwise_and(left, 16, 5, 10, right, 16, 6, 11, dst, 16, 7, 12);
 
 		// left:  0000011111000000
 		// right: 0000001111100000
@@ -533,13 +532,14 @@ namespace TestCpp11 {
 			assert(BitUtils::get(dst, 16, i));
 		}
 
-		BitUtils::bitwise_and_s(left, 16, 5, 10, left, 16, 6, 11, dst, 16, 5, 10);
+		BitUtils::bitwise_and(left, 16, 5, 10, left, 16, 4, 9, dst, 16, 5, 10);
 
 		// left:  0000011111000000
 		// right: 0000001111100000
-		// dst:   000001111100000
+		// dst:   0000001111110000
 
-		assert(BitUtils::compare(left, dst, 16) == 0);
+		assert(BitUtils::compare(right, dst, 16, 5, 10) == 0);
+		assert(BitUtils::get(dst, 16, 11));
 
 		free(left);
 		free(right);
@@ -604,7 +604,7 @@ namespace TestCpp11 {
 		// right: malloc
 		// dst:   malloc
 
-		BitUtils::bitwise_xor_s(left, left, left, 16);
+		BitUtils::bitwise_xor(left, left, left, 16);
 
 		// left:  0000000000000000
 		// right: malloc
@@ -614,9 +614,9 @@ namespace TestCpp11 {
 			assert(!BitUtils::get(left, 16, i));
 		}
 
-		BitUtils::bitwise_xor_s(right, right, right, 16, 1, 4);
-		BitUtils::bitwise_xor_s(right, right, right, 16, 5, 10);
-		BitUtils::bitwise_xor_s(right, right, right, 16, 12, 15);
+		BitUtils::bitwise_xor(right, right, right, 16, 1, 4);
+		BitUtils::bitwise_xor(right, right, right, 16, 5, 10);
+		BitUtils::bitwise_xor(right, right, right, 16, 12, 15);
 
 		// left:  0000000000000000
 		// right: ?000?00000??000?
@@ -651,7 +651,7 @@ namespace TestCpp11 {
 			BitUtils::flip(right, 16, i);
 		}
 
-		BitUtils::bitwise_xor_s(left, 16, 5, 10, right, 16, 8, 13, dst, 16, 0, 5);
+		BitUtils::bitwise_xor(left, 16, 5, 10, right, 16, 8, 13, dst, 16, 0, 5);
 
 		// left:  0011100011100011
 		// right: 1000110010101001
@@ -713,13 +713,11 @@ namespace TestCpp11 {
 		}
 
 		for (std::size_t i = 0; i < 16; i += 3) {
-			BitUtils::bitwise_not_s(dst, 16, i, (i + 2 < 16 ? i + 2 : 16));
+			BitUtils::bitwise_not(dst, 16, i, (i + 2 < 16 ? i + 2 : 16));
 		}
 
 		// src: malloc
 		// dst: 1101101101101101
-
-		std::cout << BitUtils::str(dst, 16) << std::endl;
 
 		for (std::size_t i = 2; i < 16; i += 3) {
 			assert(!BitUtils::get(dst, 16, i));
@@ -769,25 +767,25 @@ namespace TestCpp11 {
 
 		// block: 0000000000000000
 
-		assert(!BitUtils::bool_op_s(block, 16));
+		assert(!BitUtils::bool_op(block, 16, 0, 16));
 
-		BitUtils::fill(block, 10, 1);
+		BitUtils::fill(block, 16, 0, 10, 1);
 
 		// block: 1111111111000000
 
-		assert(BitUtils::bool_op_s(block, 16));
-		assert(BitUtils::bool_op_s(block, 10));
-		assert(!BitUtils::bool_op_s(block, 16, 10, 16));
+		assert(BitUtils::bool_op(block, 16, 0, 16));
+		assert(BitUtils::bool_op(block, 10, 0, 10));
+		assert(!BitUtils::bool_op(block, 16, 10, 16));
 		
 		BitUtils::fill(block, 10, 0);
 		BitUtils::fill(block, 16, 10, 16, 1);
 
 		// block: 0000000000111111
 
-		assert(BitUtils::bool_op_s(block, 16));
-		assert(!BitUtils::bool_op_s(block, 10));
-		assert(BitUtils::bool_op_s(block, 16, 0, 11));
-		assert(BitUtils::bool_op_s(block, 16, 10, 16));
+		assert(BitUtils::bool_op(block, 16, 0, 16));
+		assert(!BitUtils::bool_op(block, 10, 0, 10));
+		assert(BitUtils::bool_op(block, 16, 0, 11));
+		assert(BitUtils::bool_op(block, 16, 10, 16));
 
 		free(block);
 	}

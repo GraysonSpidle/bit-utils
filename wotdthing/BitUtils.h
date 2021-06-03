@@ -38,46 +38,36 @@
 
 #if __cplusplus >= 201100 // C++11
 /* The namespace for the BitUtils library.
-* 
-* Most functions have 2 versions: a safe version and a regular version. 
-* Safe functions adhere to bounds given by the programmer.
-If bounds are explicitly set (ie different from the defaults), then every regular function (that has a safe variant) will automatically default to the safe variant.
-
-* However, if bounds are implicitly set (ie specifying an n value that is not a logarithm of 2),
-then that is what I have dubbed as "soft bounds". This means that both versions of functions
-retain their respective functionality and it is up to the programmer if he/she would like to
-read/modify all bits or just the soft bounded ones.
-
-* Every function/class inside this namespace, where there's a start_bit and end_bit, the start_bit
-is ALWAYS inclusive and end_bit is ALWAYS exclusive.
-* 
-* Every function/class inside this namespace that has a non-const parameter 100% means that it WILL modify it in some way.
-Also, const* and *const are no exception to this.
+*
+Guarantees for every function/class inside this namespace:
+* In functions/classes where you can specify a start_bit and end_bit, the start_bit is ALWAYS inclusive and end_bit is ALWAYS exclusive.
+* In functions/classes where you specify an n value (which is all of them) the n value does not have to be a log of 2, because it will automatically be rounded up to the nearest log of 2.
+* In function/classes that have a non-const parameter, it 100% means that they WILL modify the parameter in some way. This extends to const* and *const parameters.
 */
 namespace BitUtils {
-#ifdef CHAR_BIT
+#if defined(CHAR_BIT)
 	constexpr const std::size_t CHAR_SIZE = CHAR_BIT;
-#else
-#ifdef __CHAR_BIT__
+#elif defined(__CHAR_BIT__)
 	constexpr const std::size_t CHAR_SIZE = __CHAR_BIT__;
-#endif // __CHAR_BIT__
-#endif // CHAR_BIT
+#else
+	constexpr const std::size_t CHAR_SIZE = 8;
+#endif
 
-	/* Calculates the size (in bytes) of a memory block that is size n (in bits)
+	/* Calculates the size (in bytes) of a memory block that is of size n (in bits).
 	*
 	Parameters
-	* n: the size of the memory block in bits. This does not have to be a log of 2.
+	* n: the size of the memory block in bits. Doesn't have to be a log of 2.
 	*
 	Returns the size of the memory block in bytes.
 	*/
 	inline std::size_t size(const std::size_t n);
 
-	/* Allocates a memory block on the heap that guarantees that it is at least of size n (in bits).
-	* The memory block is comprised entirely of 0s.
+	/* Allocates a memory block on the heap and guarantees that it is at least of size n (in bits).
+	* The memory block is comprised entirely of 0s (calloc).
 	* You will have to use free() on the memory block when you're done, if you don't want memory leaks.
 	*
 	Parameters
-	* n: the size of the memory block in bits. This does not have to be a log of 2.
+	* n: the size of the memory block in bits. Doesn't have to be a log of 2.
 	*
 	Returns a pointer to the memory block.
 	*/
@@ -86,58 +76,89 @@ namespace BitUtils {
 	/* Gets the selected bit's state.
 	*
 	Parameters
-	* arr_ptr: the pointer to the memory block.
+	* block: the pointer to the memory block.
 	* n: the size of the memory block in bits. Doesn't have to be a log of 2.
-	* i: the index of the bit you want to get.
+	* start_bit: the starting bit of your bounds (inclusive).
+	* end_bit: the ending bit of your bounds (exclusive).
+	* i: the local index of the bit you want to get.
 	*
-	Returns true if the bit is set and false if it isn't.
+	Returns true if the bit is set, and false if it isn't.
 	*/
-	bool get(const void* const src,
+	bool get(const void* const block,
 		const std::size_t n,
 		const std::size_t start_bit,
 		const std::size_t end_bit,
 		const std::size_t i
 	);
 
-	bool get(const void* const src,
+
+	/* Gets the selected bit's state.
+	* 
+	Parameters
+	* block: the pointer to the memory block.
+	* n: the size of the memory block in bits. Doesn't have to be a log of 2.
+	* i: the index of the bit you want to get.
+	*/
+	bool get(const void* const block,
 		const std::size_t n,
 		const std::size_t i);
 
 	/* Flips the selected bit from true to false or vice versa.
 	*
 	Parameters
-	* arr_ptr: the pointer to the memory block.
-	* n: the size of the memory block or BitArray in bits. Doesn't have to be a log of 2.
-	* i: the index of the bit you want to flip.
+	* block: the pointer to the memory block.
+	* n: the size of the memory block in bits. Doesn't have to be a log of 2.
+	* start_bit: the starting bit of your bounds (inclusive).
+	* end_bit: the ending bit of your bounds (exclusive).
+	* i: the local index of the bit you want to flip.
 	*/
-	void flip(void* const src,
+	void flip(void* const block,
 		const std::size_t n,
 		const std::size_t start_bit,
 		const std::size_t end_bit,
 		const std::size_t i);
 
-	void flip(void* const src,
+	/* Flips the selected bit from true to false or vice versa.
+	* 
+	Parameters
+	* block: the pointer to the memory block.
+	* n: the size of the memory block in bits. Doesn't have to be a log of 2.
+	* i: the index of the bit you want to flip.
+	*/
+	void flip(void* const block,
 		const std::size_t n,
 		const std::size_t i);
 
 	/* Sets the selected bit to reflect the given boolean.
 	*
 	Parameters
-	* arr_ptr: the pointer to the memory block.
+	* block: the pointer to the memory block.
 	* n: the size of the memory block in bits. Doesn't have to be a log of 2.
-	* i: the index of the bit you want to set.
+	* start_bit: the starting bit of your bounds (inclusive).
+	* end_bit: the ending bit of your bounds (exclusive).
+	* i: the local index of the bit you want to set.
 	* b: the state you want to set the bit to.
 	*
-	It is worth noting that setting a bit to false is slower than setting it to true. The flip() function is faster than this.
+	It is a nice little tidbit that setting a bit to false is slower than setting it to true. The flip() function is faster than this.
 	*/
-	void set(void* const src,
+	void set(void* const block,
 		const std::size_t n,
 		const std::size_t start_bit,
 		const std::size_t end_bit,
 		const std::size_t i,
 		const bool b);
 
-	void set(void* const src,
+	/* Sets the selected bit to reflect the given boolean.
+	*
+	Parameters
+	* block: the pointer to the memory block.
+	* n: the size of the memory block in bits. Doesn't have to be a log of 2.
+	* i: the local index of the bit you want to set.
+	* b: the state you want to set the bit to.
+	*
+	It is a nice little tidbit that setting a bit to false is slower than setting it to true. The flip() function is faster than this.
+	*/
+	void set(void* const block,
 		const std::size_t n,
 		const std::size_t i,
 		const bool b);
@@ -145,17 +166,26 @@ namespace BitUtils {
 	/* Fills all of the memory block with 1s or 0s.
 	*
 	Parameters
-	* arr_ptr: the pointer to the memory block.
+	* block: the pointer to the memory block.
 	* n: the size of the memory block in bits. Doesn't have to be a log of 2.
-	* b: the state you want to set all the bits to.
+	* start_bit: the starting bit of your bounds (inclusive).
+	* end_bit: the ending bit of your bounds (exclusive).
+	* b: the state you want to set all the bits to (true = 1 and false = 0).
 	*/
-	void fill(void* const src,
+	void fill(void* const block,
 		const std::size_t n,
 		const std::size_t start_bit,
 		const std::size_t end_bit,
 		const bool b);
 
-	void fill(void* const src,
+	/* Fills all of the memory block with 1s or 0s.
+	*
+	Parameters
+	* block: the pointer to the memory block.
+	* n: the size of the memory block in bits. Doesn't have to be a log of 2, but it will be rounded up to the nearest log of 2.
+	* b: the state you want to set all the bits to (true = 1 and false = 0).
+	*/
+	void fill(void* const block,
 		const std::size_t n,
 		const bool b);
 
@@ -164,9 +194,17 @@ namespace BitUtils {
 	*
 	Parameters
 	* left: the pointer to the left memory block.
+	* left_n: the size of the left memory block in bits. Doesn't have to be a log of 2.
+	* left_start_bit: the starting bit for the left memory block's bounds (inclusive).
+	* left_end_bit: the ending bit for the left memory block's bounds (exclusive).
 	* right: the pointer to the right memory block.
+	* right_n: the size of the right memory block in bits. Doesn't have to be a log of 2.
+	* right_start_bit: the starting bit for the right memory block's bounds (inclusive).
+	* right_end_bit: the ending bit for the right memory block's bounds (exclusive).
 	* dst: the pointer to the destination memory block. This can be the same as left or right.
-	* n: the size of all 3 memory blocks in bits. Doesn't have to be a log of 2.
+	* dst_n: the size of the dst memory block in bits. Doesn't have to be a log of 2.
+	* dst_start_bit: the starting bit for the dst memory block's bounds (inclusive).
+	* dst_end_bit: the ending bit for the dst memory block's bounds (exclusive).
 	*/
 	void bitwise_and(const void* const left,
 		const std::size_t left_n,
@@ -181,12 +219,80 @@ namespace BitUtils {
 		const std::size_t dst_start_bit,
 		const std::size_t dst_end_bit);
 
+	/* Does the & bitwise operation on two memory blocks and puts the result in the destination memory block.
+	This is the equivalent of: dst = left & right
+	* 
+	Parameters
+	* left: the pointer to the left memory block.
+	* right: the pointer to the right memory block.
+	* dst: the pointer to the destination memory block. This can be the same as left or right.
+	* n: the size of all 3 memory blocks in bits. Doesn't have to be a log of 2.
+	*/
 	void bitwise_and(const void* const left,
 		const void* const right,
 		void* const dst,
 		const std::size_t n);
 
+	/* Does the & bitwise operation on two memory blocks and puts the result in the destination memory block.
+	This is the equivalent of: dst = left & right
+	*
+	Parameters
+	* left: the pointer to the left memory block.
+	* right: the pointer to the right memory block.
+	* dst: the pointer to the destination memory block. This can be the same as left or right.
+	* n: the size of all 3 memory blocks in bits. Doesn't have to be a log of 2.
+	* start_bit: the starting bit for all 3 memory blocks' bounds (inclusive).
+	* end_bit: the ending bit for all 3 memory blocks' bounds (exclusive).
+	*/
 	void bitwise_and(const void* const left,
+		const void* const right,
+		void* const dst,
+		const std::size_t n,
+		const std::size_t start_bit,
+		const std::size_t end_bit);
+
+	/* Does the | bitwise operation on two memory blocks and puts the result in the destination memory block.
+	This is the equivalent of: dst = left | right
+	*
+	Parameters
+	* left: the pointer to the left memory block.
+	* left_n: the size of the left memory block in bits. Doesn't have to be a log of 2.
+	* left_start_bit: the starting bit for the left memory block's bounds (inclusive).
+	* left_end_bit: the ending bit for the left memory block's bounds (exclusive).
+	* right: the pointer to the right memory block.
+	* right_n: the size of the right memory block in bits. Doesn't have to be a log of 2.
+	* right_start_bit: the starting bit for the right memory block's bounds (inclusive).
+	* right_end_bit: the ending bit for the right memory block's bounds (exclusive).
+	* dst: the pointer to the destination memory block. This can be the same as left or right.
+	* dst_n: the size of the dst memory block in bits. Doesn't have to be a log of 2.
+	* dst_start_bit: the starting bit for the dst memory block's bounds (inclusive).
+	* dst_end_bit: the ending bit for the dst memory block's bounds (exclusive).
+	*/
+	void bitwise_or(const void* const left,
+		const std::size_t left_n,
+		const std::size_t left_start_bit,
+		const std::size_t left_end_bit,
+		const void* const right,
+		const std::size_t right_n,
+		const std::size_t right_start_bit,
+		const std::size_t right_end_bit,
+		void* const dst,
+		const std::size_t dst_n,
+		const std::size_t dst_start_bit,
+		const std::size_t dst_end_bit);
+
+	/* Does the | bitwise operation on two memory blocks and puts the result in the destination memory block.
+	This is the equivalent of: dst = left | right
+	*
+	Parameters
+	* left: the pointer to the left memory block.
+	* right: the pointer to the right memory block.
+	* dst: the pointer to the destination memory block. This can be the same as left or right.
+	* n: the size of all 3 memory blocks in bits. Doesn't have to be a log of 2.
+	* start_bit: the starting bit for all 3 memory blocks' bounds (inclusive).
+	* end_bit: the ending bit for all 3 memory blocks' bounds (exclusive).
+	*/
+	void bitwise_or(const void* const left,
 		const void* const right,
 		void* const dst,
 		const std::size_t n,
@@ -203,6 +309,28 @@ namespace BitUtils {
 	* n: the size of all 3 memory blocks in bits. Doesn't have to be a log of 2.
 	*/
 	void bitwise_or(const void* const left,
+		const void* const right,
+		void* const dst,
+		const std::size_t n);
+
+	/* Does the ^ bitwise operation on two memory blocks and puts the result in the destination memory block.
+	This is the equivalent of: dst = left ^ right
+	*
+	Parameters
+	* left: the pointer to the left memory block.
+	* left_n: the size of the left memory block in bits. Doesn't have to be a log of 2.
+	* left_start_bit: the starting bit for the left memory block's bounds (inclusive).
+	* left_end_bit: the ending bit for the left memory block's bounds (exclusive).
+	* right: the pointer to the right memory block.
+	* right_n: the size of the right memory block in bits. Doesn't have to be a log of 2.
+	* right_start_bit: the starting bit for the right memory block's bounds (inclusive).
+	* right_end_bit: the ending bit for the right memory block's bounds (exclusive).
+	* dst: the pointer to the destination memory block. This can be the same as left or right.
+	* dst_n: the size of the dst memory block in bits. Doesn't have to be a log of 2.
+	* dst_start_bit: the starting bit for the dst memory block's bounds (inclusive).
+	* dst_end_bit: the ending bit for the dst memory block's bounds (exclusive).
+	*/
+	void bitwise_xor(const void* const left,
 		const std::size_t left_n,
 		const std::size_t left_start_bit,
 		const std::size_t left_end_bit,
@@ -215,17 +343,23 @@ namespace BitUtils {
 		const std::size_t dst_start_bit,
 		const std::size_t dst_end_bit);
 
-	void bitwise_or(const void* const left,
+	/* Does the ^ bitwise operation on two memory blocks and puts the result in the destination memory block.
+	This is the equivalent of: dst = left ^ right
+	*
+	Parameters
+	* left: the pointer to the left memory block.
+	* right: the pointer to the right memory block.
+	* dst: the pointer to the destination memory block. This can be the same as left or right.
+	* n: the size of all 3 memory blocks in bits. Doesn't have to be a log of 2.
+	* start_bit: the starting bit for all 3 memory blocks' bounds (inclusive).
+	* end_bit: the ending bit for all 3 memory blocks' bounds (exclusive).
+	*/
+	void bitwise_xor(const void* const left,
 		const void* const right,
 		void* const dst,
 		const std::size_t n,
 		const std::size_t start_bit,
 		const std::size_t end_bit);
-
-	void bitwise_or(const void* const left,
-		const void* const right,
-		void* const dst,
-		const std::size_t n);
 
 	/* Does the ^ bitwise operation on two memory blocks and puts the result in the destination memory block.
 	This is the equivalent of: dst = left ^ right
@@ -237,37 +371,22 @@ namespace BitUtils {
 	* n: the size of all 3 memory blocks in bits. Doesn't have to be a log of 2.
 	*/
 	void bitwise_xor(const void* const left,
-		const std::size_t left_n,
-		const std::size_t left_start_bit,
-		const std::size_t left_end_bit,
-		const void* const right,
-		const std::size_t right_n,
-		const std::size_t right_start_bit,
-		const std::size_t right_end_bit,
-		void* const dst,
-		const std::size_t dst_n,
-		const std::size_t dst_start_bit,
-		const std::size_t dst_end_bit);
-
-	void bitwise_xor(const void* const left,
-		const void* const right,
-		void* const dst,
-		const std::size_t n,
-		const std::size_t start_bit,
-		const std::size_t end_bit);
-
-	void bitwise_xor(const void* const left,
 		const void* const right,
 		void* const dst,
 		const std::size_t n);
 
-	/* Does the ~ bitwise operation on a memory blocks and puts the result in the destination memory block.
-	This is the equivalent of: dst = ~arr
+	/* Does the ~ bitwise operation on a memory block and puts the result in the destination memory block.
+	This is the equivalent of: dst = ~src
 	*
 	Parameters
-	* arr_ptr: the pointer to the memory block.
-	* dst: the pointer to the destination memory block. This can be the same as arr_ptr.
-	* n: the size of all 2 memory blocks in bits. Doesn't have to be a log of 2.
+	* src: the pointer to the source memory block.
+	* src_n: the size of the source memory block in bits. Doesn't have to be a log of 2.
+	* src_start_bit: the starting bit for the source memory block's bounds (inclusive).
+	* src_end_bit: the ending bit for the source memory block's bounds (exclusive).
+	* dst: the pointer to the destination memory block. This can be the same as src.
+	* dst_n: the size of the dst memory block in bits. Doesn't have to be a log of 2.
+	* dst_start_bit: the starting bit for the dst memory block's bounds (inclusive).
+	* dst_end_bit: the ending bit for the dst memory block's bounds (exclusive).
 	*/
 	void bitwise_not(const void* const src,
 		const std::size_t src_n,
@@ -278,47 +397,95 @@ namespace BitUtils {
 		const std::size_t dst_start_bit,
 		const std::size_t dst_end_bit);
 
+	/* Does the ~ bitwise operation on a memory block and puts the result in the destination memory block.
+	This is the equivalent of: dst = ~src
+	*
+	Parameters
+	* src: the pointer to the source memory block.
+	* dst: the pointer to the destination memory block. This can be the same as src.
+	* n: the size of both of the memory blocks in bits. Doesn't have to be a log of 2.
+	*/
 	void bitwise_not(const void* const src,
 		void* const dst,
 		const std::size_t n);
 
+	/* Does the ~ bitwise operation on a memory block and puts the result in the destination memory block.
+	This is the equivalent of: dst = ~src
+	*
+	Parameters
+	* src: the pointer to the source memory block.
+	* dst: the pointer to the destination memory block. This can be the same as src.
+	* n: the size of both of the memory blocks in bits. Doesn't have to be a log of 2.
+	* start_bit: the starting bit for both memory blocks' bounds (inclusive).
+	* end_bit: the ending bit for both memory blocks' bounds (exclusive).
+	*/
 	void bitwise_not(const void* const src,
 		void* const dst,
 		const std::size_t n,
 		const std::size_t start_bit,
 		const std::size_t end_bit);
 
-	void bitwise_not(void* const src,
+	/* Does the ~ bitwise operation on a memory block and puts the result in the same memory block.
+	This is the equivalent of: block = ~block
+	*
+	Parameters
+	* block: the pointer to the source and destination memory block.
+	* n: the size of the memory block in bits. Doesn't have to be a log of 2.
+	* start_bit: the starting bit for the memory block's bounds (inclusive).
+	* end_bit: the ending bit for the memory block's bounds (exclusive).
+	*/
+	void bitwise_not(void* const block,
 		const std::size_t n,
 		const std::size_t start_bit,
 		const std::size_t end_bit);
 
-	void bitwise_not(void* const src,
+	/* Does the ~ bitwise operation on a memory block and puts the result in the same memory block.
+	This is the equivalent of: block = ~block
+	*
+	Parameters
+	* block: the pointer to the source and destination memory block.
+	* n: the size of the memory block in bits. Doesn't have to be a log of 2.
+	*/
+	void bitwise_not(void* const block,
 		const std::size_t n);
 
-	/* Evaluates the memory block as a bool.
+	/* Evaluates a memory block as a bool.
 	This is similar to casting an int to a bool
 	*
 	Parameters
-	* arr_ptr: the pointer to the memory block.
+	* block: the pointer to the memory block.
 	* n: the size of the memory block in bits. Doesn't have to be a log of 2.
-	Returns false if all the bits are 0 or returns true otherwise.
+	* start_bit: the starting bit for the memory block's bounds (inclusive).
+	* end_bit: the ending bit for the memory block's bounds (exclusive).
+	Returns false if all the bits are 0 else returns true.
 	*/
-	bool bool_op(const void* const src,
+	bool bool_op(const void* const block,
 		const std::size_t n,
 		const std::size_t start_bit,
 		const std::size_t end_bit);
 
+	/* Evaluates a memory block as a bool.
+	This is similar to casting an int to a bool
+	*
+	Parameters
+	* block: the pointer to the memory block.
+	* n: the size of the memory block in bits. Doesn't have to be a log of 2.
+	Returns false if all the bits are 0 else returns true.
+	*/
 	bool bool_op(const void* const src,
 		const std::size_t n);
 
 	/* Copies memory from one memory block to another.
 	* 
 	Parameters
-	* dst: pointer to the desination memory block.
-	* dst_n: the size (in bits) of the destination memory block.
-	* src: pointer to the source memory block.
-	* src_n: the size (in bits) of the source memory block.
+	* src: the pointer to the source memory block.
+	* src_n: the size of the source memory block in bits. Doesn't have to be a log of 2.
+	* src_start_bit: the starting bit for the source memory block's bounds (inclusive).
+	* src_end_bit: the ending bit for the source memory block's bounds (exclusive).
+	* dst: the pointer to the destination memory block. This can be the same as src.
+	* dst_n: the size of the dst memory block in bits. Doesn't have to be a log of 2.
+	* dst_start_bit: the starting bit for the dst memory block's bounds (inclusive).
+	* dst_end_bit: the ending bit for the dst memory block's bounds (exclusive).
 	*/
 	void copy(const void* const src,
 		const std::size_t src_n,
@@ -329,16 +496,50 @@ namespace BitUtils {
 		const std::size_t dst_start_bit,
 		const std::size_t dst_end_bit);
 
+	/* Copies memory from one memory block to another.
+	*
+	Parameters
+	* src: the pointer to the source memory block.
+	* dst: the pointer to the destination memory block. This can be the same as src (it won't do anything though).
+	* n: the size of both memory blocks in bits. Doesn't have to be a log of 2.
+	* start_bit: the starting bit for both memory blocks' bounds (inclusive).
+	* end_bit: the ending bit for both memory blocks' bounds (exclusive).
+	*/
 	void copy(const void* const src,
 		void* const dst,
 		const std::size_t n,
 		const std::size_t start_bit,
 		const std::size_t end_bit);
-
+	
+	/* Copies memory from one memory block to another.
+	*
+	Parameters
+	* src: the pointer to the source memory block.
+	* dst: the pointer to the destination memory block. This can be the same as src.
+	* n: the size of both memory blocks in bits. Doesn't have to be a log of 2.
+	*/
 	void copy(const void* const src,
 		void* const dst,
 		const std::size_t n);
 
+	/* Compares two memory blocks as if they were numbers.
+	* 
+	* Don't rely on the values of the numbers aside from them being either positive, negative, or zero.
+	* 
+	Parameters
+	* left: the pointer to the left memory block.
+	* left_n: the size of the left memory block in bits. Doesn't have to be a log of 2.
+	* left_start_bit: the starting bit for the left memory block's bounds (inclusive).
+	* left_end_bit: the ending bit for the left memory block's bounds (exclusive).
+	* right: the pointer to the right memory block.
+	* right_n: the size of the right memory block in bits. Doesn't have to be a log of 2.
+	* right_start_bit: the starting bit for the right memory block's bounds (inclusive).
+	* right_end_bit: the ending bit for the right memory block's bounds (exclusive).
+	Returns:
+	* a number < 0 if right has a bit set (to true) that left does not.
+	* a number > 0 if left has a bit set (to true) that right does not.
+	* 0 if left and right are equal.
+	*/
 	int compare(const void* const left,
 		const std::size_t left_n,
 		const std::size_t left_start_bit,
@@ -348,12 +549,40 @@ namespace BitUtils {
 		const std::size_t right_start_bit,
 		const std::size_t right_end_bit);
 
+	/* Compares two memory blocks as if they were numbers.
+	*
+	* Don't rely on the values of the numbers aside from them being either positive, negative, or zero.
+	*
+	Parameters
+	* left: the pointer to the left memory block.
+	* right: the pointer to the right memory block.
+	* n: the size of both memory blocks in bits. Doesn't have to be a log of 2.
+	* start_bit: the starting bit for both memory blocks' bounds (inclusive).
+	* right_end_bit: the ending bit for both memory blocks' bounds (exclusive).
+	Returns:
+	* a number < 0 if right has a bit set (to true) that left does not.
+	* a number > 0 if left has a bit set (to true) that right does not.
+	* 0 if left and right are equal.
+	*/
 	int compare(const void* const left,
 		const void* const right,
 		const std::size_t n,
 		const std::size_t start_bit,
 		const std::size_t end_bit);
 
+	/* Compares two memory blocks as if they were numbers.
+	*
+	* Don't rely on the values of the numbers aside from them being either positive, negative, or zero.
+	*
+	Parameters
+	* left: the pointer to the left memory block.
+	* right: the pointer to the right memory block.
+	* n: the size of both memory blocks in bits. Doesn't have to be a log of 2.
+	Returns:
+	* a number < 0 if right has a bit set (to true) that left does not.
+	* a number > 0 if left has a bit set (to true) that right does not.
+	* 0 if left and right are equal.
+	*/
 	int compare(const void* const left,
 		const void* const right,
 		const std::size_t n);
@@ -361,12 +590,16 @@ namespace BitUtils {
 	/* Performs the == operation on two memory blocks.
 	* 
 	Parameters
-	* left: pointer to the left memory block.
-	* left_n: the size (in bits) of the left memory block. This does not have to be the same as right_n.
-	* right: pointer to the right memory block.
-	* right_n: the size (in bits) of the right memory block. This does not have to be the same as left_n.
+	* left: the pointer to the left memory block.
+	* left_n: the size of the left memory block in bits. Doesn't have to be a log of 2.
+	* left_start_bit: the starting bit for the left memory block's bounds (inclusive).
+	* left_end_bit: the ending bit for the left memory block's bounds (exclusive).
+	* right: the pointer to the right memory block.
+	* right_n: the size of the right memory block in bits. Doesn't have to be a log of 2.
+	* right_start_bit: the starting bit for the right memory block's bounds (inclusive).
+	* right_end_bit: the ending bit for the right memory block's bounds (exclusive).
 	* 
-	Returns true if all pertinent bits in both blocks are the same or false otherwise.
+	Returns true if all pertinent bits, in both blocks, are the same else returns false.
 	*/
 	bool equals(const void* const left,
 		const std::size_t left_n,
@@ -377,29 +610,109 @@ namespace BitUtils {
 		const std::size_t right_start_bit,
 		const std::size_t right_end_bit);
 
+	/* Performs the == operation on two memory blocks.
+	*
+	Parameters
+	* left: the pointer to the left memory block.
+	* right: the pointer to the right memory block.
+	* n: the size of both memory blocks in bits. Doesn't have to be a log of 2.
+	* start_bit: the starting bit for both memory blocks' bounds (inclusive).
+	* end_bit: the ending bit for both memory blocks' bounds (exclusive).
+	*
+	Returns true if all pertinent bits, in both blocks, are the same else returns false.
+	*/
+	bool equals(const void* const left,
+		const void* const right,
+		const std::size_t n,
+		const std::size_t start_bit,
+		const std::size_t end_bit);
+
+	/* Performs the == operation on two memory blocks.
+	*
+	Parameters
+	* left: the pointer to the left memory block.
+	* right: the pointer to the right memory block.
+	* n: the size of both memory blocks in bits. Doesn't have to be a log of 2.
+	* 
+	Returns true if all pertinent bits, in both blocks, are the same else returns false.
+	*/
 	bool equals(const void* left,
 		const void* const right,
 		const std::size_t n);
 
+	/* Performs an operation similar to bitshift left. It puts the results in the same memory block.
+	* This function will ALWAYS shift bits towards the little endian. If you're on a little endian machine (if you don't know, then you probably are), then this is technically backwards.
+	*
+	Parameters
+	* block: the pointer to the memory block.
+	* n: the size of the memory blocks in bits. Doesn't have to be a log of 2.
+	* start_bit: the starting bit for the memory block's bounds (inclusive).
+	* end_bit: the ending bit for the memory block's bounds (exclusive).
+	*/
 	void shift_left(void* const block,
 		const std::size_t n,
 		const std::size_t start_bit,
 		const std::size_t end_bit,
 		const std::size_t by);
 
+	/* Performs an operation similar to bitshift left. It puts the results in the same memory block.
+	* This function will ALWAYS shift bits towards the little endian. If you're on a little endian machine (if you don't know, then you probably are), then this is technically backwards.
+	*
+	Parameters
+	* block: the pointer to the memory block.
+	* n: the size of the memory blocks in bits. Doesn't have to be a log of 2.
+	*/
 	void shift_left(void* const block,
 		const std::size_t n,
 		const std::size_t by);
 
+	/* Performs an operation similar to bitshift right. It puts the results in the same memory block.
+	* This function will ALWAYS shift bits towards the big endian. If you're on a little endian machine (if you don't know, then you probably are), then this is technically backwards.
+	*
+	Parameters
+	* block: the pointer to the memory block.
+	* n: the size of the memory blocks in bits. Doesn't have to be a log of 2.
+	* start_bit: the starting bit for the memory block's bounds (inclusive).
+	* end_bit: the ending bit for the memory block's bounds (exclusive).
+	*/
 	void shift_right(void* const block,
 		const std::size_t n,
 		const std::size_t start_bit,
 		const std::size_t end_bit,
 		const std::size_t by);
 
+	/* Performs an operation similar to bitshift right. It puts the results in the same memory block.
+	* This function will ALWAYS shift bits towards the big endian. If you're on a little endian machine (if you don't know, then you probably are), then this is technically backwards.
+	*
+	Parameters
+	* block: the pointer to the memory block.
+	* n: the size of the memory blocks in bits. Doesn't have to be a log of 2.
+	*/
 	void shift_right(void* const block,
 		const std::size_t n,
 		const std::size_t by);
+
+	/* Performs a standard all operation on the specified bits in the block.
+	* 
+	Parameters
+	* block: the pointer to the memory block.
+	* n: the size of the memory blocks in bits. Doesn't have to be a log of 2.
+	* start_bit: the starting bit for the memory block's bounds (inclusive).
+	* end_bit: the ending bit for the memory block's bounds (exclusive).
+	*/
+	bool all(const void* const block,
+		const std::size_t n,
+		const std::size_t start_bit,
+		const std::size_t end_bit);
+
+	/* Performs a standard all operation on the specified bits in the block.
+	*
+	Parameters
+	* block: the pointer to the memory block.
+	* n: the size of the memory blocks in bits. Doesn't have to be a log of 2.
+	*/
+	bool all(const void* const block,
+		const std::size_t n);
 
 	/* Puts a string representation of the binary of the memory block into the supplied buffer.
 	Bit 0 will always be the left most number regardless if the machine is big or little endian.

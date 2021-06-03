@@ -762,8 +762,8 @@ void BitUtils::bitwise_not_s(
 	const std::size_t dst_start_bit,
 	const std::size_t dst_end_bit
 ) {
-	if (use_safe_function(src_n, src_start_bit, src_end_bit, __func__) ||
-		use_safe_function(dst_n, dst_start_bit, dst_end_bit, __func__)
+	if (!use_safe_function(src_n, src_start_bit, src_end_bit, __func__) &&
+		!use_safe_function(dst_n, dst_start_bit, dst_end_bit, __func__)
 	) {
 		bitwise_not(src, src_n, src_start_bit, src_end_bit, dst, dst_n, dst_start_bit, dst_end_bit);
 	}

@@ -690,7 +690,46 @@ namespace TestCpp11 {
 			assert(BitUtils::get(dst, 16, i));
 		}
 		for (std::size_t i = 10; i < 16; i++) {
+			assert(BitUtils::get(dst, 16, i));
+		}
+
+		free(src);
+		free(dst);
+	}
+
+	void test_bitwise_not_s() {
+		void* src = malloc(2);
+		void* dst = malloc(2);
+
+		BitUtils::copy(src, dst, 16);
+		BitUtils::bitwise_not(dst, 16);
+		BitUtils::bitwise_and(src, dst, dst, 16);
+
+		// src: malloc
+		// dst: 0000000000000000
+
+		for (std::size_t i = 0; i < 16; i++) {
 			assert(!BitUtils::get(dst, 16, i));
+		}
+
+		for (std::size_t i = 0; i < 16; i += 3) {
+			BitUtils::bitwise_not_s(dst, 16, i, (i + 2 < 16 ? i + 2 : 16));
+		}
+
+		// src: malloc
+		// dst: 1101101101101101
+
+		std::cout << BitUtils::str(dst, 16) << std::endl;
+
+		for (std::size_t i = 2; i < 16; i += 3) {
+			assert(!BitUtils::get(dst, 16, i));
+		}
+		
+		for (std::size_t i = 0; i < 16; i += 3) {
+			assert(BitUtils::get(dst, 16, i));
+			if (i != 15) {
+				assert(BitUtils::get(dst, 16, i + 1));
+			}
 		}
 
 		free(src);
@@ -770,6 +809,7 @@ namespace TestCpp11 {
 		test_bitwise_xor();
 		test_bitwise_xor_s();
 		test_bitwise_not();
+		test_bitwise_not_s();
 		test_bool_op();
 		test_bool_op_s();
 	}

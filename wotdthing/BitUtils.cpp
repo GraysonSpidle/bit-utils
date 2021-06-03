@@ -236,18 +236,36 @@ void BitUtils::copy(const void* const src,
 	const std::size_t dst_start_bit,
 	const std::size_t dst_end_bit
 ) {
-	if (src == dst)
+	if (src == dst &&
+		src_start_bit == dst_start_bit &&
+		src_end_bit == dst_end_bit
+	)
 		return;
 
 	std::size_t min_n = ((src_end_bit - src_start_bit) < (dst_end_bit - dst_start_bit))
 		? (src_end_bit - src_start_bit)
 		: (dst_end_bit - dst_start_bit);
-	fill(dst, min_n, dst_start_bit, dst_start_bit + min_n, 0);
-	bitwise_or(
-		src, src_n, src_start_bit, src_start_bit + min_n,
-		dst, dst_n, dst_start_bit, dst_start_bit + min_n,
-		dst, dst_n, dst_start_bit, dst_start_bit + min_n
-	);
+
+	if (src == dst) {
+		if (src_start_bit < dst_start_bit) {
+			for (std::size_t i = min_n; i > 0; i--) {
+				set(dst, dst_n, dst_start_bit, dst_end_bit, i - 1, get(src, src_n, src_start_bit, src_end_bit, i - 1));
+			}
+		}
+		else {
+			for (std::size_t i = 0; i < min_n; i++) {
+				set(dst, dst_n, dst_start_bit, dst_end_bit, i, get(src, src_n, src_start_bit, src_end_bit, i));
+			}
+		}
+	}
+	else {
+		fill(dst, min_n, dst_start_bit, dst_start_bit + min_n, 0);
+		bitwise_or(
+			src, src_n, src_start_bit, src_start_bit + min_n,
+			dst, dst_n, dst_start_bit, dst_start_bit + min_n,
+			dst, dst_n, dst_start_bit, dst_start_bit + min_n
+		);
+	}
 }
 
 void BitUtils::copy(const void* const src,
@@ -613,6 +631,65 @@ bool BitUtils::equals(const void* left,
 		left, n, 0, n,
 		right, n, 0, n
 	);
+}
+
+void BitUtils::shift_left(
+	void* const block,
+	const std::size_t n,
+	const std::size_t start_bit,
+	const std::size_t end_bit,
+	const std::size_t by
+) {
+	if (by == 0)
+		return;
+	if (by >= end_bit - start_bit) {
+		fill(block, n, 0);
+		return;
+	}
+
+	copy(
+		block, n, start_bit + by, end_bit,
+		block, n, start_bit, end_bit - by
+	);
+	fill(block, n, end_bit - by, end_bit, 0);
+}
+
+void BitUtils::shift_left(
+	void* const block,
+	const std::size_t n,
+	const std::size_t by
+) {
+	shift_left(block, n, 0, n, by);
+}
+
+void BitUtils::shift_right(
+	void* const block,
+	const std::size_t n,
+	const std::size_t start_bit,
+	const std::size_t end_bit,
+	const std::size_t by
+) {
+	if (by == 0)
+		return;
+	if (by >= end_bit - start_bit) {
+		fill(block, n, 0);
+		return;
+	}
+
+
+	copy(
+		block, n, start_bit, end_bit - by,
+		block, n, start_bit + by, end_bit
+	);
+	fill(block, n, start_bit, start_bit + by, 0);
+}
+
+void BitUtils::shift_right(
+	void* const block,
+	const std::size_t n,
+	const std::size_t by
+) {
+	shift_right(block, n, 0, n, by);
 }
 
 int BitUtils::compare(

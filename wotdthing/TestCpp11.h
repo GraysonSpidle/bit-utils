@@ -790,6 +790,109 @@ namespace TestCpp11 {
 		free(block);
 	}
 
+	void test_shift_left() {
+		void* block = calloc(2, 1);
+		BitUtils::fill(block, 16, 0, 3, 1);
+		BitUtils::fill(block, 16, 4, 6, 1);
+		BitUtils::set(block, 16, 7, 1);
+		BitUtils::fill(block, 16, 9, 11, 1);
+		BitUtils::fill(block, 16, 12, 15, 1);
+
+		// block: 1110110101101110
+
+		BitUtils::shift_left(block, 16, 3);
+		
+		// block: 0110101101110000
+
+		assert(!BitUtils::get(block, 16, 0));
+		for (std::size_t i = 1; i < 3; i++)
+			assert(BitUtils::get(block, 16, i));
+		assert(!BitUtils::get(block, 16, 3));
+		assert(BitUtils::get(block, 16, 4));
+		assert(!BitUtils::get(block, 16, 5));
+		for (std::size_t i = 6; i < 8; i++)
+			assert(BitUtils::get(block, 16, i));
+		assert(!BitUtils::get(block, 16, 8));
+		for (std::size_t i = 9; i < 12; i++)
+			assert(BitUtils::get(block, 16, i));
+		for (std::size_t i = 12; i < 16; i++)
+			assert(!BitUtils::get(block, 16, i));
+
+		BitUtils::shift_left(block, 16, 4, 12, 5);
+
+		// block: 0110111000000000
+
+		assert(!BitUtils::get(block, 16, 0));
+		for (std::size_t i = 1; i < 3; i++)
+			assert(BitUtils::get(block, 16, i));
+		assert(!BitUtils::get(block, 16, 3));
+		for (std::size_t i = 4; i < 7; i++)
+			assert(BitUtils::get(block, 16, i));
+		for (std::size_t i = 7; i < 16; i++)
+			assert(!BitUtils::get(block, 16, i));
+
+		BitUtils::shift_left(block, 16, 16);
+
+		// block: 0000000000000000
+
+		assert(!BitUtils::bool_op(block, 16));
+
+		free(block);
+	}
+
+	void test_shift_right() {
+		void* block = calloc(2, 1);
+		BitUtils::fill(block, 16, 0, 3, 1);
+		BitUtils::fill(block, 16, 4, 6, 1);
+		BitUtils::set(block, 16, 7, 1);
+		BitUtils::fill(block, 16, 9, 11, 1);
+		BitUtils::fill(block, 16, 12, 15, 1);
+
+		// block: 1110110101101110
+
+		BitUtils::shift_right(block, 16, 3);
+
+		// block: 0001110110101101
+
+		for (std::size_t i = 0; i < 3; i++)
+			assert(!BitUtils::get(block, 16, i));
+		for (std::size_t i = 3; i < 6; i++)
+			assert(BitUtils::get(block, 16, i));
+		assert(!BitUtils::get(block, 16, 6));
+		for (std::size_t i = 7; i < 9; i++)
+			assert(BitUtils::get(block, 16, i));
+		assert(!BitUtils::get(block, 16, 9));
+		assert(BitUtils::get(block, 16, 10));
+		assert(!BitUtils::get(block, 16, 11));
+		for (std::size_t i = 12; i < 14; i++)
+			assert(BitUtils::get(block, 16, i));
+		assert(!BitUtils::get(block, 16, 14));
+		assert(BitUtils::get(block, 16, 15));
+		
+		BitUtils::shift_right(block, 16, 4, 12, 5);
+
+		// block: 0001000001101101
+
+		assert(!BitUtils::bool_op(block, 16, 0, 3));
+		assert(BitUtils::get(block, 16, 3));
+		assert(!BitUtils::bool_op(block, 16, 4, 9));
+		for (std::size_t i = 9; i < 11; i++)
+			assert(BitUtils::get(block, 16, i));
+		assert(!BitUtils::get(block, 16, 11));
+		for (std::size_t i = 12; i < 14; i++)
+			assert(BitUtils::get(block, 16, i));
+		assert(!BitUtils::get(block, 16, 14));
+		assert(BitUtils::get(block, 16, 15));
+
+		BitUtils::shift_right(block, 16, 16);
+
+		// block: 0000000000000000
+
+		assert(!BitUtils::bool_op(block, 16));
+
+		free(block);
+	}
+
 	void test_everything() {
 		test_get();
 		test_flip();
@@ -810,6 +913,8 @@ namespace TestCpp11 {
 		test_bitwise_not_s();
 		test_bool_op();
 		test_bool_op_s();
+		test_shift_left();
+		test_shift_right();
 	}
 };
 

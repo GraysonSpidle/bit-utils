@@ -26,5 +26,8 @@
     <ClInclude Include="BitUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TestCpp11.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

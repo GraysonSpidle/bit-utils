@@ -381,6 +381,26 @@ namespace BitUtils {
 		const void* const right,
 		const std::size_t n);
 
+	void shift_left(void* const block,
+		const std::size_t n,
+		const std::size_t start_bit,
+		const std::size_t end_bit,
+		const std::size_t by);
+
+	void shift_left(void* const block,
+		const std::size_t n,
+		const std::size_t by);
+
+	void shift_right(void* const block,
+		const std::size_t n,
+		const std::size_t start_bit,
+		const std::size_t end_bit,
+		const std::size_t by);
+
+	void shift_right(void* const block,
+		const std::size_t n,
+		const std::size_t by);
+
 	/* Puts a string representation of the binary of the memory block into the supplied buffer.
 	Bit 0 will always be the left most number regardless if the machine is big or little endian.
 	* 

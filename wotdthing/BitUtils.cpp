@@ -29,6 +29,20 @@ inline bool is_soft_bounded(
 	return !is_bounded(n, start_bit, end_bit) && BitUtils::size(n) * CHAR_SIZE != n;
 }
 
+inline bool do_bounds_overlap(
+	const void* const left,
+	const std::size_t left_start_bit,
+	const std::size_t left_end_bit,
+	const void* const right,
+	const std::size_t right_start_bit,
+	const std::size_t right_end_bit
+) {
+	if (left == right)
+		return true;
+	return (unsigned char*)left + (left_end_bit - left_start_bit) >= right ||
+		(unsigned char*)right + (right_end_bit - right_start_bit) >= left;
+}
+
 inline bool use_safe_function(
 	const std::size_t n,
 	const std::size_t start_bit,
@@ -246,7 +260,7 @@ void BitUtils::copy(const void* const src,
 		? (src_end_bit - src_start_bit)
 		: (dst_end_bit - dst_start_bit);
 
-	if (src == dst) {
+	if (do_bounds_overlap(src, src_start_bit, src_end_bit, dst, dst_start_bit, dst_end_bit)) {
 		if (src_start_bit < dst_start_bit) {
 			for (std::size_t i = min_n; i > 0; i--) {
 				set(dst, dst_n, dst_start_bit, dst_end_bit, i - 1, get(src, src_n, src_start_bit, src_end_bit, i - 1));
@@ -333,7 +347,9 @@ void BitUtils::bitwise_and(
 
 	std::size_t i = 0;
 	int step = 1;
-	if (left == right && left == dst) {
+	if (do_bounds_overlap(left, left_start_bit, left_end_bit, right, right_start_bit, right_end_bit) &&
+		do_bounds_overlap(left, left_start_bit, left_end_bit, dst, dst_start_bit, dst_end_bit)
+	) {
 		if (left_start_bit < dst_start_bit || right_start_bit < dst_start_bit) {
 			i = min_n;
 			step = -1;
@@ -503,7 +519,9 @@ void BitUtils::bitwise_xor(
 
 	std::size_t i = 0;
 	int step = 1;
-	if (left == right && left == dst) {
+	if (do_bounds_overlap(left, left_start_bit, left_end_bit, right, right_start_bit, right_end_bit) &&
+		do_bounds_overlap(left, left_start_bit, left_end_bit, dst, dst_start_bit, dst_end_bit)
+	) {
 		if (left_start_bit < dst_start_bit || right_start_bit < dst_start_bit) {
 			i = min_n;
 			step = -1;
@@ -562,7 +580,7 @@ void BitUtils::bitwise_not(
 	const std::size_t dst_start_bit,
 	const std::size_t dst_end_bit
 ) {
-	if (src == dst) {
+	if (do_bounds_overlap(src, src_start_bit, src_end_bit, dst, dst_start_bit, dst_end_bit)) {
 		for (std::size_t i = 0; i < (dst_end_bit - dst_start_bit); i++) {
 			flip(dst, dst_n, dst_start_bit, dst_end_bit, i);
 		}
@@ -722,7 +740,6 @@ void BitUtils::shift_right(
 		fill(block, n, 0);
 		return;
 	}
-
 
 	copy(
 		block, n, start_bit, end_bit - by,

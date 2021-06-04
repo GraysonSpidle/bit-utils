@@ -279,10 +279,8 @@ void BitUtils::copy(const void* const src,
 	_validateBounds(n, start_bit, end_bit, 0);
 #if defined(__GNUG__) || defined(_CRT_SECURE_NO_WARNINGS) // if you're using gcc or don't want to use memcpy_s
 	memcpy(dst, src, size(src_n));
-	return;
 #else // if you're using vc++
 	memcpy_s(dst, size(n), src, size(n));
-	return;
 #endif
 }
 
@@ -309,17 +307,14 @@ void BitUtils::bitwise_and(
 	const std::size_t dst_end_bit
 ) {
 	if (left == right &&
-		left_n == right_n &&
 		left_start_bit == right_start_bit &&
 		left_end_bit == right_end_bit
 	) {
-		if (left == dst)
+		if (left == dst &&
+			left_start_bit == dst_start_bit &&
+			left_end_bit == dst_end_bit
+		)
 			return;
-		copy(
-			left, left_n, left_start_bit, left_end_bit,
-			dst, dst_n, dst_start_bit, dst_end_bit
-		);
-		return;
 	}
 	std::size_t min_n = ((left_end_bit - left_start_bit) < (right_end_bit - right_start_bit))
 		? (left_end_bit - left_start_bit)
@@ -327,13 +322,30 @@ void BitUtils::bitwise_and(
 	min_n = (min_n < (dst_end_bit - dst_start_bit))
 		? min_n
 		: (dst_end_bit - dst_start_bit);
+
+	// I guess I should explain a little bit about what's going on.
+	/* So in the event that the user wants to do this function on the same memory block, but
+	* in different places, then we might have to do something special.
+	* 
+	* IFF the destination range is behind the left or right range then we MUST do this in reverse
+	* or else we will get incorrect results.
+	*/
+
+	std::size_t i = 0;
+	int step = 1;
+	if (left == right && left == dst) {
+		if (left_start_bit < dst_start_bit || right_start_bit < dst_start_bit) {
+			i = min_n;
+			step = -1;
+		}
+	}
 	bool l, r;
-	for (std::size_t i = 0; i < min_n; i++) {
-		l = get(left, left_n, left_start_bit, left_start_bit + min_n, i);
-		r = get(right, right_n, right_start_bit, right_start_bit + min_n, i);
+	for (; (step < 0 ? i > 0 : i < min_n); i += step) {
+		l = get(left, left_n, left_start_bit, left_start_bit + min_n, (step < 0 ? i - 1 : i));
+		r = get(right, right_n, right_start_bit, right_start_bit + min_n, (step < 0 ? i - 1 : i));
 		set(
 			dst, dst_n, dst_start_bit, dst_start_bit + min_n,
-			i,
+			(step < 0 ? i - 1 : i),
 			l & r
 		);
 	}
@@ -466,21 +478,45 @@ void BitUtils::bitwise_xor(
 	const std::size_t dst_start_bit,
 	const std::size_t dst_end_bit
 ) {
-	if (left == right) {
+	if (left == right &&
+		left_start_bit == right_start_bit &&
+		left_end_bit == right_end_bit
+	) {
 		fill(dst, dst_n, dst_start_bit, dst_end_bit, 0);
 		return;
 	}
+
+	// I guess I should explain a little bit about what's going on.
+	/* So in the event that the user wants to do this function on the same memory block, but
+	* in different places, then we might have to do something special.
+	* 
+	* IFF the destination range is behind the left or right range then we MUST do this in reverse
+	* or else we will get incorrect results.
+	*/
+
 	std::size_t min_n = ((left_end_bit - left_start_bit) < (right_end_bit - right_start_bit))
 		? (left_end_bit - left_start_bit)
 		: (right_end_bit - right_start_bit);
 	min_n = (min_n < (dst_end_bit - dst_start_bit))
 		? min_n
 		: (dst_end_bit - dst_start_bit);
-	for (std::size_t i = 0; i < min_n; i++) {
+
+	std::size_t i = 0;
+	int step = 1;
+	if (left == right && left == dst) {
+		if (left_start_bit < dst_start_bit || right_start_bit < dst_start_bit) {
+			i = min_n;
+			step = -1;
+		}
+	}
+	bool l, r;
+	for (; (step < 0 ? i > 0 : i < min_n); i += step) {
+		l = get(left, left_n, left_start_bit, left_start_bit + min_n, (step < 0 ? i - 1 : i));
+		r = get(right, right_n, right_start_bit, right_start_bit + min_n, (step < 0 ? i - 1 : i));
 		set(
 			dst, dst_n, dst_start_bit, dst_start_bit + min_n,
-			i,
-			get(left, left_n, left_start_bit, left_start_bit + min_n, i) ^ get(right, right_n, right_start_bit, right_start_bit + min_n, i)
+			(step < 0 ? i - 1 : i),
+			l ^ r
 		);
 	}
 }
@@ -850,6 +886,60 @@ std::wstring BitUtils::wstr(const void* const src,
 
 std::wstring BitUtils::wstr(const void* const src, const std::size_t n) {
 	return wstr(src, n, 0, n);
+}
+
+void BitUtils::from_str(
+	void* const block, 
+	const std::size_t n,
+	const std::size_t start_bit,
+	const std::size_t end_bit,
+	const std::string& s
+) {
+	std::size_t min_n = (end_bit - start_bit) < s.length()
+		? end_bit - start_bit
+		: s.length();
+
+	char c;
+	for (std::size_t i = 0; i < min_n; i++) {
+		c = s.at(i);
+		if (c == '0')
+			set(block, n, start_bit, end_bit, i, 0);
+		else if (c == '1')
+			set(block, n, start_bit, end_bit, i, 1);
+		else
+			throw std::invalid_argument("unrecognized char: " + c );
+	}
+}
+
+void BitUtils::from_str(void* const block, const std::size_t n, const std::string& s) {
+	from_str(block, n, 0, n, s);
+}
+
+void BitUtils::from_wstr(
+	void* const block,
+	const std::size_t n,
+	const std::size_t start_bit,
+	const std::size_t end_bit,
+	const std::wstring& s
+) {
+	std::size_t min_n = (end_bit - start_bit) < s.length()
+		? end_bit - start_bit
+		: s.length();
+
+	wchar_t c;
+	for (std::size_t i = 0; i < min_n; i++) {
+		c = s.at(i);
+		if (c == L'0')
+			set(block, n, start_bit, end_bit, i, 0);
+		else if (c == L'1')
+			set(block, n, start_bit, end_bit, i, 1);
+		else
+			throw std::invalid_argument("unrecognized char: " + c);
+	}
+}
+
+void BitUtils::from_wstr(void* const block, const std::size_t n, const std::wstring& s) {
+	from_wstr(block, n, 0, n, s);
 }
 
 void BitUtils::for_each_byte(void* const begin, void* const end, void (*func)(unsigned char* pC)) {

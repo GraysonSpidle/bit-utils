@@ -19,7 +19,7 @@ constexpr const std::size_t CHAR_SIZE = __CHAR_BIT__;
 #define IS_LITTLE_ENDIAN (1 << 1) > 1
 
 void testCpp11();
-#if __cplusplus >= 201700 // C++17
+#if 0//__cplusplus >= 201700 // C++17
 void testCpp17();
 #endif // C++17
 
@@ -41,7 +41,7 @@ void testCpp11() {
 	std::cout << "All tests passed!" << std::endl;
 }
 
-#if __cplusplus >= 201700 // C++17
+#if 0//__cplusplus >= 201700 // C++17
 void testCpp17() {
 	typedef BitUtils::BitUtils<10> Thing;
 

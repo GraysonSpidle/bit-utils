@@ -11,7 +11,8 @@ The C++17 version adds a generic class that aims to make the number of parameter
 
 ## Installation Notes
 
-I'm still working on this and revisions will be made in the future, but the functions that have test functions for the C++ 11 version seem to work 100% as intended. That does include the core functions: `get()`, `set()`, and `flip()`. When I'm done with the project, I'll put out a release.
+The C++11 version is more or less done.
+I'm still working on the C++17 version. When I'm totally done, I'll put out a release.
 
 The C++17 version isn't tested as extensively as the C++11 version so take care if you're using that. I will be writing tests for it, but I'm just a 1 man team and progress takes time.
 

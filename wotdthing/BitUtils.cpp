@@ -650,12 +650,7 @@ bool BitUtils::bool_op(const void* const src,
 	const std::size_t start_bit,
 	const std::size_t end_bit
 ) {
-	if (n % CHAR_SIZE) {
-		if (bool_op(src, (n - CHAR_SIZE ? n - CHAR_SIZE : CHAR_SIZE))) // We're evaluating all the previous bytes as bools (as it is faster, probably)
-			return true;
-	}
-
-	// Now evaluating each individual bit. Slow, but necessary.
+	// Evaluating each individual bit. Slow, but necessary.
 	for (std::size_t i = 0; i < end_bit - start_bit; i++) {
 		if (get(src, n, start_bit, end_bit, i))
 			return true;

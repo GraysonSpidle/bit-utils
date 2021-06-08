@@ -768,8 +768,8 @@ bool BitUtils::all(
 	const std::size_t start_bit,
 	const std::size_t end_bit
 ) {
-	for (std::size_t i = start_bit; i < end_bit; i++) {
-		if (!get(block, n, i))
+	for (std::size_t i = 0; i < end_bit - start_bit; i++) {
+		if (!get(block, n, start_bit, end_bit, i))
 			return false;
 	}
 	return true;

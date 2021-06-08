@@ -581,8 +581,19 @@ void BitUtils::bitwise_not(
 	const std::size_t dst_end_bit
 ) {
 	if (do_bounds_overlap(src, src_start_bit, src_end_bit, dst, dst_start_bit, dst_end_bit)) {
-		for (std::size_t i = 0; i < (dst_end_bit - dst_start_bit); i++) {
-			flip(dst, dst_n, dst_start_bit, dst_end_bit, i);
+		std::size_t min_n = (dst_end_bit - dst_start_bit) < (src_end_bit - src_start_bit)
+			? dst_end_bit - dst_start_bit
+			: src_end_bit - src_start_bit;
+
+		std::size_t i = 0;
+		int step = 1;
+		if (src_start_bit < dst_start_bit) {
+			i = min_n;
+			step = -1;
+		}
+
+		for (; (step < 0 ? i > 0 : i < min_n); i += step) {
+			flip(dst, dst_n, dst_start_bit, dst_end_bit, (step < 0 ? i - 1 : i));
 		}
 	}
 	else {

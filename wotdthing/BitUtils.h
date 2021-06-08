@@ -951,27 +951,27 @@ namespace BitUtils {
 				reinterpret_cast<const unsigned char*>(right) + (BitUtils_right::end_bit - BitUtils_right::start_bit) >= left;
 		}
 
+		// Thank you stack overflow! (adapted code from there)
+
+		constexpr static std::size_t floorlog2(std::size_t  x) {
+#if _BITUTILS_IS_LITTLE_ENDIAN
+			return x == 1 ? 0 : 1 + floorlog2(x >> 1);
+#else
+			return x == 1 ? 0 : 1 + floorlog2(x << 1);
+#endif
+		}
+
+		constexpr static std::size_t ceillog2(std::size_t x) {
+			return x == 1 ? 0 : floorlog2(x - 1) + 1;
+		}
+
 	public:
 		constexpr static const std::size_t n = end_bit - start_bit; // The number of bits we're working with.
-		constexpr static const std::size_t size() {
-			if constexpr (_n <= CHAR_SIZE)
-				return 1;
-			else {
-				std::size_t i = 0;
-#if _BITUTILS_IS_LITTLE_ENDIAN
-				while (((std::size_t)1 << i) < _n) {
-#else
-				while (((std::size_t)1 >> i) < _n) {
-#endif
-					i++;
-				}
-				return ((std::size_t)1 << i) / CHAR_SIZE;
-			}
-		}; // The number of bytes that would be allocated.
+		constexpr static const std::size_t size = floorlog2(_n); // The number of bytes that would be allocated.
 		constexpr static const std::size_t start_bit = start_bit; // The index of the bit to start on (inclusive).
 		constexpr static const std::size_t end_bit = end_bit; // The index of the bit to end on (exclusive).
 		constexpr static const bool is_bounded = start_bit != 0 || end_bit != _n;
-		constexpr static const bool is_soft_bounded = !is_bounded && size() * CHAR_SIZE != _n;
+		constexpr static const bool is_soft_bounded = !is_bounded && size * CHAR_SIZE != _n;
 
 		// ========== TYPE DEFS ==========
 
@@ -1000,7 +1000,7 @@ namespace BitUtils {
 		* _n will be a log of 2.
 		* the safe versions of functions (where available) are not forcibly used.
 		*/
-		using unbound = BitUtils<size() * CHAR_SIZE>;
+		typedef BitUtils<size * CHAR_SIZE> unbound;
 
 		/* A typedef that, given a type, makes an unbounded BitUtils class that accomodates for its size. */
 		template <
@@ -1077,7 +1077,7 @@ namespace BitUtils {
 		/// </summary>
 		/// <returns>Returns a void* to the memory block.</returns>
 		static void* create() {
-			return calloc(size(), 1);
+			return calloc(size, 1);
 		}
 
 		/// <summary>
@@ -1092,10 +1092,10 @@ namespace BitUtils {
 					set(block, i, b);
 				}
 			}
-			else if constexpr (size() == 1)
+			else if constexpr (size == 1)
 				*(reinterpret_cast<unsigned char*>(block)) = b ? -1 : 0;
 			else
-				memset(block, b ? (unsigned char)-1 : 0, size());
+				memset(block, b ? (unsigned char)-1 : 0, size);
 		}
 
 		/// <summary>
@@ -1141,9 +1141,9 @@ namespace BitUtils {
 						min_n, BitUtils_dst::start_bit, BitUtils_dst::start_bit + min_n
 					>::fill(dst, 0);
 					bitwise_or<
-						BitUtils<BitUtils_src::n, BitUtils_src::start_bit BitUtils_src::start_bit + min_n>,
-						BitUtils<BitUtils_dst::n, BitUtils_dst::start_bit BitUtils_dst::start_bit + min_n>,
-						BitUtils<BitUtils_dst::n, BitUtils_dst::start_bit BitUtils_dst::start_bit + min_n>
+						BitUtils<BitUtils_src::n, BitUtils_src::start_bit, BitUtils_src::start_bit + min_n>,
+						BitUtils<BitUtils_dst::n, BitUtils_dst::start_bit, BitUtils_dst::start_bit + min_n>,
+						BitUtils<BitUtils_dst::n, BitUtils_dst::start_bit, BitUtils_dst::start_bit + min_n>
 					>(src, dst, dst);
 				}
 			}
@@ -1151,9 +1151,9 @@ namespace BitUtils {
 				if (src == dst)
 					return;
 #if defined(__GNUG__) || defined(_CRT_SECURE_NO_WARNINGS)
-				memcpy(dst, src, BitUtils_src::size());
+				memcpy(dst, src, BitUtils_src::size);
 #else
-				memcpy_s(dst, BitUtils_dst::size(), src, BitUtils_src::size());
+				memcpy_s(dst, BitUtils_dst::size, src, BitUtils_src::size);
 #endif
 			}
 		}
@@ -1273,17 +1273,17 @@ namespace BitUtils {
 						BitUtils_left::n,
 						BitUtils_left::start_bit,
 						BitUtils_left::start_bit + min_n
-					>::get(left, (step < 0 ? i - 1 : i));
+					>::get(left, i);
 					r = BitUtils<
 						BitUtils_right::n,
 						BitUtils_right::start_bit,
 						BitUtils_right::start_bit + min_n
-					>::get(right, (step < 0 ? i - 1 : i));
+					>::get(right, i);
 					BitUtils<
 						BitUtils_dst::n,
 						BitUtils_dst::start_bit,
 						BitUtils_dst::start_bit + min_n
-					>::set(dst, (step < 0 ? i - 1 : i), l | r);
+					>::set(dst, i, l | r);
 				}
 			}
 			else {
@@ -1315,8 +1315,25 @@ namespace BitUtils {
 		static void bitwise_xor(const void* const left, const void* const right, void* const dst) {
 			if constexpr (BitUtils_left::is_bounded || BitUtils_right::is_bounded || BitUtils_dst::is_bounded) {
 				constexpr const std::size_t min_n = _BITUTILS_MIN(_BITUTILS_MIN(BitUtils_left::n, BitUtils_right::n), BitUtils_dst::n);
+
+				std::size_t i = 0;
+				int step = 1;
+				if constexpr (
+					(
+						do_bounds_overlap<BitUtils_left, BitUtils_right>(left, right) &&
+						do_bounds_overlap<BitUtils_left, BitUtils_dst>(left, dst)
+					) &&
+					(
+						BitUtils_left::start_bit < BitUtils_dst::start_bit ||
+						BitUtils_right::start_bit < BitUtils_dst::start_bit
+					)
+				) {
+					i = min_n;
+					step = -1;
+				}
+
 				bool l, r;
-				for (std::size_t i = 0; i < min_n; i++) {
+				for (; (step < 0 ? i > 0 : i < min_n); i += step) {
 					l = BitUtils<
 						BitUtils_left::n,
 						BitUtils_left::start_bit,
@@ -1362,15 +1379,20 @@ namespace BitUtils {
 		static void bitwise_not(const void* const src, void* const dst) {
 			if constexpr (BitUtils_src::is_bounded || BitUtils_dst::is_bounded) {
 				if constexpr (do_bounds_overlap<BitUtils_src, BitUtils_dst>(src, dst)) {
+
+					constexpr std::size_t min_n = _BITUTILS_MIN(BitUtils_src::n, BitUtils_dst::n);
+
 					constexpr std::size_t i = (BitUtils_src::start_bit < BitUtils_dst::start_bit) ? min_n : 0;
 					constexpr int step = (BitUtils_src::start_bit < BitUtils_dst::start_bit) ? -1 : 1;
+					
 					for (; (step < 0 ? i > 0 : i < min_n); i += step) {
 						BitUtils_dst::flip(dst, (step < 0 ? i - 1 : i));
 					}
 				}
 				else {
 					BitUtils_dst::fill(dst, 1);
-					BitUtils_src::bitwise_xor<
+
+					bitwise_xor<
 						BitUtils_src,
 						BitUtils_dst,
 						BitUtils_dst
@@ -1420,7 +1442,7 @@ namespace BitUtils {
 				BitUtils<n, start_bit, end_bit - amount>,
 				BitUtils<n, start_bit + amount, end_bit>
 			>(block, block);
-			BitUtils<n, start_bit, start_bit + by>::fill(block, 0);
+			BitUtils<n, start_bit, start_bit + amount>::fill(block, 0);
 		}
 
 		/// <summary>
@@ -1455,7 +1477,7 @@ namespace BitUtils {
 			if constexpr (BitUtils_left::is_bounded || BitUtils_right::is_bounded)
 				return 0 == compare<BitUtils_left, BitUtils_right>(left, right);
 			else { // unbounded
-				for (std::size_t i = 0; i < size(); i++) {
+				for (std::size_t i = 0; i < size; i++) {
 					if (bool(*BitUtils_left::getPage(left, i * CHAR_SIZE)) != bool(*BitUtils_right::getPage(right, i * CHAR_SIZE)))
 						return false;
 				}
@@ -1495,7 +1517,7 @@ namespace BitUtils {
 				return true;
 			}
 			else { // unbounded
-				for (std::size_t i = 0; i < size(); i++) {
+				for (std::size_t i = 0; i < size; i++) {
 					if (*getPage(block, i * CHAR_SIZE) != (unsigned char)-1)
 						return false;
 				}
@@ -1594,7 +1616,7 @@ namespace BitUtils {
 			std::enable_if_t < std::is_invocable_v <FF, unsigned char* const>, bool > = true
 		>
 		static void for_each_byte(void* const block, const FF& func) {
-			for (std::size_t i = 0; i < size(); i++) {
+			for (std::size_t i = 0; i < size; i++) {
 				std::invoke(func, getPage(block, i * CHAR_SIZE));
 			}
 		}
@@ -1604,7 +1626,7 @@ namespace BitUtils {
 			std::enable_if_t < std::is_invocable_v <FF, unsigned char* const>, bool > = true
 		>
 		static void rfor_each_byte(void* const block, const FF& func) {
-			for (std::size_t i = size(); i > 0; i--) {
+			for (std::size_t i = size; i > 0; i--) {
 				std::invoke(func, getPage(block, (i - 1) * CHAR_SIZE));
 			}
 		}
@@ -1614,7 +1636,7 @@ namespace BitUtils {
 			std::enable_if_t < std::is_invocable_v <FF, const unsigned char* const>, bool > = true
 		>
 		static void for_each_byte(const void* const block, const FF& func) {
-			for (std::size_t i = 0; i < size(); i++) {
+			for (std::size_t i = 0; i < size; i++) {
 				std::invoke(func, getPage(block, i * CHAR_SIZE));
 			}
 		}
@@ -1624,7 +1646,7 @@ namespace BitUtils {
 			std::enable_if_t < std::is_invocable_v <FF, const unsigned char* const>, bool > = true
 		>
 		static void rfor_each_byte(const void* const block, const FF& func) {
-			for (std::size_t i = size(); i > 0; i--) {
+			for (std::size_t i = size; i > 0; i--) {
 				std::invoke(func, getPage(block, (i - 1) * CHAR_SIZE));
 			}
 		}

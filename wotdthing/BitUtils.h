@@ -43,6 +43,16 @@ Guarantees for every function/class inside this namespace:
 * In functions/classes where you can specify a start_bit and end_bit, the start_bit is ALWAYS inclusive and end_bit is ALWAYS exclusive.
 * In functions/classes where you specify an n value (which is all of them) the n value does not have to be a log of 2, because it will automatically be rounded up to the nearest log of 2.
 * In function/classes that have a non-const parameter, it 100% means that they WILL modify the parameter in some way. This extends to const* and *const parameters.
+* 
+All C++11 functions can throw any of these:
+* std::invalid_argument: for when you have invalid bounds or (in the case of from_str()) you have an unrecognized char (ie not a 1 or 0).
+* std::out_of_range: for when you have valid bounds, but you tried to read/write a bit that is outside those bounds.
+* 
+For the C++17 class, you will likely run into funky errors. I've found that if you get errors in regards to SFINAE stuff, then your logic is probably incorrect some where (ie you're putting in an incorrect number for the bounds).
+*
+For all you performance min-maxers, it is worth noting that for the C++11 functions, the amount of parameters you specify does matter.
+* Functions that require a start_bit and end_bit for each block of memory act differently than ones that don't.
+* In other words, if you don't need to specify bounds, then don't.
 */
 namespace BitUtils {
 #if defined(CHAR_BIT)
@@ -91,7 +101,6 @@ namespace BitUtils {
 		const std::size_t i
 	);
 
-
 	/* Gets the selected bit's state.
 	* 
 	Parameters
@@ -139,7 +148,7 @@ namespace BitUtils {
 	* i: the local index of the bit you want to set.
 	* b: the state you want to set the bit to.
 	*
-	It is a nice little tidbit that setting a bit to false is slower than setting it to true. The flip() function is faster than this.
+	For you performance min-maxers, it is worth noting that setting a bit to false is slower than setting it to true. In general, the flip() function is faster than this.
 	*/
 	void set(void* const block,
 		const std::size_t n,
@@ -156,14 +165,14 @@ namespace BitUtils {
 	* i: the local index of the bit you want to set.
 	* b: the state you want to set the bit to.
 	*
-	It is a nice little tidbit that setting a bit to false is slower than setting it to true. The flip() function is faster than this.
+	For you performance min-maxers, it is worth noting that setting a bit to false is slower than setting it to true. In general, the flip() function is faster than this.
 	*/
 	void set(void* const block,
 		const std::size_t n,
 		const std::size_t i,
 		const bool b);
 
-	/* Fills all of the memory block with 1s or 0s.
+	/* Fills the memory block with 1s or 0s.
 	*
 	Parameters
 	* block: the pointer to the memory block.
@@ -193,11 +202,11 @@ namespace BitUtils {
 	This is the equivalent of: dst = left & right
 	*
 	Parameters
-	* left: the pointer to the left memory block.
+	* left: the pointer to the left memory block. This can be the same as right or dst.
 	* left_n: the size of the left memory block in bits. Doesn't have to be a log of 2.
 	* left_start_bit: the starting bit for the left memory block's bounds (inclusive).
 	* left_end_bit: the ending bit for the left memory block's bounds (exclusive).
-	* right: the pointer to the right memory block.
+	* right: the pointer to the right memory block. This can be the same as left or dst.
 	* right_n: the size of the right memory block in bits. Doesn't have to be a log of 2.
 	* right_start_bit: the starting bit for the right memory block's bounds (inclusive).
 	* right_end_bit: the ending bit for the right memory block's bounds (exclusive).
@@ -223,8 +232,8 @@ namespace BitUtils {
 	This is the equivalent of: dst = left & right
 	* 
 	Parameters
-	* left: the pointer to the left memory block.
-	* right: the pointer to the right memory block.
+	* left: the pointer to the left memory block. This can be the same as right or dst.
+	* right: the pointer to the right memory block. This can be the same as left or dst.
 	* dst: the pointer to the destination memory block. This can be the same as left or right.
 	* n: the size of all 3 memory blocks in bits. Doesn't have to be a log of 2.
 	*/
@@ -237,8 +246,8 @@ namespace BitUtils {
 	This is the equivalent of: dst = left & right
 	*
 	Parameters
-	* left: the pointer to the left memory block.
-	* right: the pointer to the right memory block.
+	* left: the pointer to the left memory block. This can be the same as right or dst.
+	* right: the pointer to the right memory block. This can be the same as left or dst.
 	* dst: the pointer to the destination memory block. This can be the same as left or right.
 	* n: the size of all 3 memory blocks in bits. Doesn't have to be a log of 2.
 	* start_bit: the starting bit for all 3 memory blocks' bounds (inclusive).
@@ -255,11 +264,11 @@ namespace BitUtils {
 	This is the equivalent of: dst = left | right
 	*
 	Parameters
-	* left: the pointer to the left memory block.
+	* left: the pointer to the left memory block. This can be the same as right or dst.
 	* left_n: the size of the left memory block in bits. Doesn't have to be a log of 2.
 	* left_start_bit: the starting bit for the left memory block's bounds (inclusive).
 	* left_end_bit: the ending bit for the left memory block's bounds (exclusive).
-	* right: the pointer to the right memory block.
+	* right: the pointer to the right memory block. This can be the same as left or dst.
 	* right_n: the size of the right memory block in bits. Doesn't have to be a log of 2.
 	* right_start_bit: the starting bit for the right memory block's bounds (inclusive).
 	* right_end_bit: the ending bit for the right memory block's bounds (exclusive).
@@ -285,8 +294,8 @@ namespace BitUtils {
 	This is the equivalent of: dst = left | right
 	*
 	Parameters
-	* left: the pointer to the left memory block.
-	* right: the pointer to the right memory block.
+	* left: the pointer to the left memory block. This can be the same as right or dst.
+	* right: the pointer to the right memory block. This can be the same as left or dst.
 	* dst: the pointer to the destination memory block. This can be the same as left or right.
 	* n: the size of all 3 memory blocks in bits. Doesn't have to be a log of 2.
 	* start_bit: the starting bit for all 3 memory blocks' bounds (inclusive).
@@ -303,8 +312,8 @@ namespace BitUtils {
 	This is the equivalent of: dst = left | right
 	*
 	Parameters
-	* left: the pointer to the left memory block.
-	* right: the pointer to the right memory block.
+	* left: the pointer to the left memory block. This can be the same as right or dst.
+	* right: the pointer to the right memory block. This can be the same as left or dst.
 	* dst: the pointer to the destination memory block. This can be the same as left or right.
 	* n: the size of all 3 memory blocks in bits. Doesn't have to be a log of 2.
 	*/
@@ -317,11 +326,11 @@ namespace BitUtils {
 	This is the equivalent of: dst = left ^ right
 	*
 	Parameters
-	* left: the pointer to the left memory block.
+	* left: the pointer to the left memory block. This can be the same as right or dst.
 	* left_n: the size of the left memory block in bits. Doesn't have to be a log of 2.
 	* left_start_bit: the starting bit for the left memory block's bounds (inclusive).
 	* left_end_bit: the ending bit for the left memory block's bounds (exclusive).
-	* right: the pointer to the right memory block.
+	* right: the pointer to the right memory block. This can be the same as left or dst.
 	* right_n: the size of the right memory block in bits. Doesn't have to be a log of 2.
 	* right_start_bit: the starting bit for the right memory block's bounds (inclusive).
 	* right_end_bit: the ending bit for the right memory block's bounds (exclusive).
@@ -347,8 +356,8 @@ namespace BitUtils {
 	This is the equivalent of: dst = left ^ right
 	*
 	Parameters
-	* left: the pointer to the left memory block.
-	* right: the pointer to the right memory block.
+	* left: the pointer to the left memory block. This can be the same as right or dst.
+	* right: the pointer to the right memory block. This can be the same as left or dst.
 	* dst: the pointer to the destination memory block. This can be the same as left or right.
 	* n: the size of all 3 memory blocks in bits. Doesn't have to be a log of 2.
 	* start_bit: the starting bit for all 3 memory blocks' bounds (inclusive).
@@ -365,8 +374,8 @@ namespace BitUtils {
 	This is the equivalent of: dst = left ^ right
 	*
 	Parameters
-	* left: the pointer to the left memory block.
-	* right: the pointer to the right memory block.
+	* left: the pointer to the left memory block. This can be the same as right or dst.
+	* right: the pointer to the right memory block. This can be the same as left or dst.
 	* dst: the pointer to the destination memory block. This can be the same as left or right.
 	* n: the size of all 3 memory blocks in bits. Doesn't have to be a log of 2.
 	*/
@@ -527,11 +536,11 @@ namespace BitUtils {
 	* Don't rely on the values of the numbers aside from them being either positive, negative, or zero.
 	* 
 	Parameters
-	* left: the pointer to the left memory block.
+	* left: the pointer to the left memory block. This can be the same as right.
 	* left_n: the size of the left memory block in bits. Doesn't have to be a log of 2.
 	* left_start_bit: the starting bit for the left memory block's bounds (inclusive).
 	* left_end_bit: the ending bit for the left memory block's bounds (exclusive).
-	* right: the pointer to the right memory block.
+	* right: the pointer to the right memory block. This can be the same as left.
 	* right_n: the size of the right memory block in bits. Doesn't have to be a log of 2.
 	* right_start_bit: the starting bit for the right memory block's bounds (inclusive).
 	* right_end_bit: the ending bit for the right memory block's bounds (exclusive).
@@ -554,8 +563,8 @@ namespace BitUtils {
 	* Don't rely on the values of the numbers aside from them being either positive, negative, or zero.
 	*
 	Parameters
-	* left: the pointer to the left memory block.
-	* right: the pointer to the right memory block.
+	* left: the pointer to the left memory block. This can be the same as right (it'll always return 0 though).
+	* right: the pointer to the right memory block. This can be the same as left (it'll always return 0 though).
 	* n: the size of both memory blocks in bits. Doesn't have to be a log of 2.
 	* start_bit: the starting bit for both memory blocks' bounds (inclusive).
 	* right_end_bit: the ending bit for both memory blocks' bounds (exclusive).
@@ -575,8 +584,8 @@ namespace BitUtils {
 	* Don't rely on the values of the numbers aside from them being either positive, negative, or zero.
 	*
 	Parameters
-	* left: the pointer to the left memory block.
-	* right: the pointer to the right memory block.
+	* left: the pointer to the left memory block. This can be the same as right (it'll always return 0 though).
+	* right: the pointer to the right memory block. This can be the same as left (it'll always return 0 though).
 	* n: the size of both memory blocks in bits. Doesn't have to be a log of 2.
 	Returns:
 	* a number < 0 if right has a bit set (to true) that left does not.
@@ -590,11 +599,11 @@ namespace BitUtils {
 	/* Performs the == operation on two memory blocks.
 	* 
 	Parameters
-	* left: the pointer to the left memory block.
+	* left: the pointer to the left memory block. This can be the same as right.
 	* left_n: the size of the left memory block in bits. Doesn't have to be a log of 2.
 	* left_start_bit: the starting bit for the left memory block's bounds (inclusive).
 	* left_end_bit: the ending bit for the left memory block's bounds (exclusive).
-	* right: the pointer to the right memory block.
+	* right: the pointer to the right memory block. This can be the same left.
 	* right_n: the size of the right memory block in bits. Doesn't have to be a log of 2.
 	* right_start_bit: the starting bit for the right memory block's bounds (inclusive).
 	* right_end_bit: the ending bit for the right memory block's bounds (exclusive).
@@ -613,8 +622,8 @@ namespace BitUtils {
 	/* Performs the == operation on two memory blocks.
 	*
 	Parameters
-	* left: the pointer to the left memory block.
-	* right: the pointer to the right memory block.
+	* left: the pointer to the left memory block. This can be the same as right.
+	* right: the pointer to the right memory block. This can be the same as left.
 	* n: the size of both memory blocks in bits. Doesn't have to be a log of 2.
 	* start_bit: the starting bit for both memory blocks' bounds (inclusive).
 	* end_bit: the ending bit for both memory blocks' bounds (exclusive).
@@ -630,8 +639,8 @@ namespace BitUtils {
 	/* Performs the == operation on two memory blocks.
 	*
 	Parameters
-	* left: the pointer to the left memory block.
-	* right: the pointer to the right memory block.
+	* left: the pointer to the left memory block. This can be the same as right.
+	* right: the pointer to the right memory block. This can be the same as left.
 	* n: the size of both memory blocks in bits. Doesn't have to be a log of 2.
 	* 
 	Returns true if all pertinent bits, in both blocks, are the same else returns false.
@@ -718,25 +727,29 @@ namespace BitUtils {
 	Bit 0 will always be the left most number regardless if the machine is big or little endian.
 	* 
 	Parameters
-	* arr_ptr: pointer to the memory block.
-	* arr_n: the size (in bits) of the memory block. Does nothing if this is 0.
-	* buf: the char buffer to put the string into. This should be arr_n + 1.
+	* src: pointer to the memory block.
+	* n: the size (in bits) of the memory block. Does nothing if this is 0.
+	* start_bit: the starting bit for the memory block's bounds (inclusive).
+	* end_bit: the ending bit for the memory block's bounds (exclusive).
+	* buf: the char buffer to put the string into. This should be of size n + 1 (for the null termination char).
 	* 
 	Note that this does null terminate the string by any means necessary (ie it will overwrite a bit so it can null terminate the string).
 	*/
 	void str(const void* const src, 
-		const std::size_t src_n,
-		const std::size_t src_start_bit,
-		const std::size_t src_end_bit,
+		const std::size_t n,
+		const std::size_t start_bit,
+		const std::size_t end_bit,
 		char* const buf);
 
 	/* Puts a wide string representation of the binary of the memory block into the supplied buffer.
 	Bit 0 will always be the left most number regardless if the machine is big or little endian.
 	*
 	Parameters
-	* arr_ptr: pointer to the memory block.
-	* arr_n: the size (in bits) of the memory block. Does nothing if this is 0.
-	* buf: the wide char buffer to put the string into. This should be arr_n + 1.
+	* src: pointer to the memory block.
+	* n: the size (in bits) of the memory block. Does nothing if this is 0.
+	* start_bit: the starting bit for the memory block's bounds (inclusive).
+	* end_bit: the ending bit for the memory block's bounds (exclusive).
+	* buf: the wide char buffer to put the string into. This should be of size n + 1 (for the null termination char).
 	* buf_n: the size (in wide chars) of the buffer. Does nothing if this is 0.
 	*
 	Note that this does null terminate the string by any means necessary (ie it will overwrite a bit so it can null terminate the string).
@@ -748,12 +761,14 @@ namespace BitUtils {
 		wchar_t* const buf,
 		const std::size_t buf_n);
 
-	/* Puts a string representation of the binary of the memory block into the supplied output stream.
+	/* Puts a string representation of the binary of the memory block into the supplied output stream (character by character).
 	Bit 0 will always be the left most number regardless if the machine is big or little endian.
 	*
 	Parameters
-	* arr_ptr: pointer to the memory block.
-	* arr_n: the size (in bits) of the memory block. Does nothing if this is 0.
+	* src: pointer to the memory block.
+	* n: the size (in bits) of the memory block. Does nothing if this is 0.
+	* start_bit: the starting bit for the memory block's bounds (inclusive).
+	* end_bit: the ending bit for the memory block's bounds (exclusive).
 	* os: the output stream to put the string into.
 	*/
 	void str(const void* const src,
@@ -762,12 +777,14 @@ namespace BitUtils {
 		const std::size_t end_bit,
 		std::ostream& os);
 
-	/* Puts a wide string representation of the binary of the memory block into the supplied wide output stream.
+	/* Puts a wide string representation of the binary of the memory block into the supplied wide output stream (character by character).
 	Bit 0 will always be the left most number regardless if the machine is big or little endian.
 	*
 	Parameters
-	* arr_ptr: pointer to the memory block.
-	* arr_n: the size (in bits) of the memory block. Does nothing if this is 0.
+	* src: pointer to the memory block.
+	* n: the size (in bits) of the memory block. Does nothing if this is 0.
+	* start_bit: the starting bit for the memory block's bounds (inclusive).
+	* end_bit: the ending bit for the memory block's bounds (exclusive).
 	* wos: the wide output stream to put the string into.
 	*/
 	void wstr(const void* const src,
@@ -794,131 +811,92 @@ namespace BitUtils {
 	std::wstring wstr(const void* const src,
 		const std::size_t n);
 
+	/* Interprets a string made from str() and puts the data into the memory block.
+	* 
+	Parameters
+	* block: pointer to the memory block.
+	* n: the size (in bits) of the memory block. Does nothing if this is 0.
+	* start_bit: the starting bit for the memory block's bounds (inclusive).
+	* end_bit: the ending bit for the memory block's bounds (exclusive).
+	* s: reference to the string to interpret.
+	*/
 	void from_str(void* const block,
 		const std::size_t n,
 		const std::size_t start_bit,
 		const std::size_t end_bit,
 		const std::string& s);
 
+	/* Interprets a string made from str() and puts the data into the memory block.
+	*
+	Parameters
+	* block: pointer to the memory block.
+	* n: the size (in bits) of the memory block. Does nothing if this is 0.
+	* s: reference to the string to interpret.
+	*/
 	void from_str(void* const block,
 		const std::size_t n,
 		const std::string& s);
 
+	/* Interprets a wstring made from wstr() and puts the data into the memory block.
+	*
+	Parameters
+	* block: pointer to the memory block.
+	* n: the size (in bits) of the memory block. Does nothing if this is 0.
+	* start_bit: the starting bit for the memory block's bounds (inclusive).
+	* end_bit: the ending bit for the memory block's bounds (exclusive).
+	* s: reference to the wstring to interpret.
+	*/
 	void from_wstr(void* const block,
 		const std::size_t n,
 		const std::size_t start_bit,
 		const std::size_t end_bit,
 		const std::wstring& s);
 
+	/* Interprets a wstring made from wstr() and puts the data into the memory block.
+	*
+	Parameters
+	* block: pointer to the memory block.
+	* n: the size (in bits) of the memory block. Does nothing if this is 0.
+	* s: reference to the wstring to interpret.
+	*/
 	void from_wstr(void* const block,
 		const std::size_t n,
 		const std::wstring& s);
 
-	/* For each function that iterates over pages in a memory block. Pages (in reference to "memory paging") are defined by the user.
-	For scenarios where it is impossible to evenly divide up the memory block into pages, it will just repeat some of the memory at the end.
-	* 
-	Template Args
-	* PageType: an arithmetic type that will be used for the pages.
-	* 
-	Parameters
-	* begin: pointer to the beginning of the memory block.
-	* end: pointer to the end of the memory block.
-	* func: pointer to a function that will be used on every page.
-	* 
-	Note that a reverse iteration can be achieved if begin > end.
-	*/
-	template <class PageType, typename = std::enable_if_t < std::is_arithmetic_v<PageType>, bool > >
-	void for_each_page(void* const begin, void* const end, void (*func)(PageType* const pP)) {
-		bool reverse = begin > end;
-		for (PageType* it = (PageType*)(reverse ? end : begin); (reverse ? it > begin : it < end); it += (reverse ? -1 : 1) * sizeof(PageType)) {
-			(*func)(it);
-		}
-		if (reverse)
-			(*func)((PageType*)begin);
-	}
-
-	/* For each function that iterates over pages in a memory block. Pages (in reference to "memory paging") are defined by the user.
-	For scenarios where it is impossible to evenly divide up the memory block into pages, it will just repeat some of the memory at the end.
-	*
-	Template Args
-	* PageType: an arithmetic type that will be used for the pages.
-	*
-	Parameters
-	* begin: pointer to the beginning of the memory block.
-	* end: pointer to the end of the memory block.
-	* func: reference to a function that will be used on every page.
-	*
-	Note that a reverse iteration can be achieved if begin > end.
-	*/
-	template <
-		class PageType,
-		typename std::enable_if < std::is_arithmetic<PageType>::value, bool >::type = true
-	>
-	void for_each_page(void* const begin, void* const end, std::function<void(PageType*)>& func) {
-		bool reverse = begin > end;
-		for (PageType* it = (PageType*)(reverse ? end : begin); (reverse ? it > begin : it < end); it += (reverse ? -1 : 1) * sizeof(PageType)) {
-			func(it);
-		}
-		if (reverse)
-			func((PageType*)begin);
-	}
-
-	template <
-		class PageType,
-		typename std::enable_if < std::is_arithmetic<PageType>::value, bool >::type = true
-	>
-	void for_each_page(void* const begin, void* const end, void (*func)(PageType& pP)) {
-		bool reverse = begin > end;
-		for (PageType* it = (PageType*)(reverse ? end : begin); (reverse ? it > begin : it < end); it += (reverse ? -1 : 1) * sizeof(PageType)) {
-			func(it);
-		}
-		if (reverse)
-			func((PageType*)begin);
-	}
-
 	/* For each function that iterates over each byte in a memory block.
 	*
 	Parameters
 	* begin: pointer to the beginning of the memory block.
 	* end: pointer to the end of the memory block.
-	* func: pointer to a function that will be used on every byte.
+	* func: reference to a function that will be used on every byte. Takes in an unsigned char*
 	*
 	Note that a reverse iteration can be achieved if begin > end.
 	*/
-	void for_each_byte(void* const begin, void* const end, void (*func)(unsigned char* pC));
-
-	/* For each function that iterates over each byte in a memory block.
-	*
-	Parameters
-	* begin: pointer to the beginning of the memory block.
-	* end: pointer to the end of the memory block.
-	* func: reference to a function that will be used on every byte.
-	*
-	Note that a reverse iteration can be achieved if begin > end.
-	*/
-	void for_each_byte(void* const begin, void* const end, std::function<void(unsigned char*)>& func);
+	template < class UnaryFunction >
+	void for_each_byte(void* const begin, void* const end, UnaryFunction f);
 
 	/* For each function that iterates over each bit in a memory block.
 	*
 	Parameters
 	* begin: pointer to the beginning of the memory block.
 	* end: pointer to the end of the memory block.
-	* func: pointer to a function that will be used on every bit.
+	* func: pointer to a function that will be used on every bit. The function takes in a bool.
 	*
 	Note that a reverse iteration can be achieved if begin > end.
 	*/
-	void for_each_bit(const void* const begin, const void* const end, void (*func)(bool b));
+	template < class UnaryFunction >
+	void for_each_bit(const void* const begin, const void* const end, UnaryFunction f);
 
-	/* For each function that iterates over each bit in a memory block.
-	*
-	Parameters
-	* begin: pointer to the beginning of the memory block.
-	* end: pointer to the end of the memory block.
-	* func: reference to a function that will be used on every bit.
-	*
-	Note that a reverse iteration can be achieved if begin > end.
+	/* For each function that iterates over each bit in a bounded memory block.
 	*/
-	void for_each_bit(const void* const begin, const void* const end, std::function<void(bool)>& func);
+	template < class UnaryFunction >
+	void for_each_bit(
+		const void* const begin,
+		const std::size_t start_bit,
+		const void* const end,
+		const std::size_t end_bit,
+		UnaryFunction f
+	);
 
 #if __cplusplus >= 201700 // C++17
 	template <
@@ -935,8 +913,6 @@ namespace BitUtils {
 		> = true
 	>
 	class BitUtils {
-#define _BITUTILS_USE_SAFE_FUNCTIONS(BitUtils0, BitUtils1, BitUtils2) (BitUtils0::is_bounded || BitUtils1::is_bounded || BitUtils2::is_bounded)
-#define _BITUTILS_USE_SAFE_FUNCTIONS2(BitUtils0, BitUtils1) (BitUtils0::is_bounded || BitUtils1::is_bounded)
 #define _BITUTILS_MIN(left, right) ((left) < (right) ? (left) : (right))
 
 		template <
@@ -1035,9 +1011,9 @@ namespace BitUtils {
 		/// <returns>true if the bit is 1 and false if the bit 0.</returns>
 		static bool get(const void* const block, std::size_t i) {
 			if constexpr (_BITUTILS_IS_LITTLE_ENDIAN)
-				return *getPage(block, i) & ((std::size_t)1 << ((i + start_bit) % CHAR_SIZE));
+				return *BitUtils::getPage(block, i) & ((std::size_t)1 << ((i + start_bit) % CHAR_SIZE));
 			else
-				return *getPage(block, i) & ((std::size_t)1 >> ((i + start_bit) % CHAR_SIZE));
+				return *BitUtils::getPage(block, i) & ((std::size_t)1 >> ((i + start_bit) % CHAR_SIZE));
 		}
 
 		/// <summary>
@@ -1047,9 +1023,9 @@ namespace BitUtils {
 		/// <param name="i">the index of the bit to flip.</param>
 		static void flip(void* const block, std::size_t i) {
 			if constexpr (_BITUTILS_IS_LITTLE_ENDIAN)
-				*getPage(block, i) ^= ((std::size_t)1 << ((i + start_bit) % CHAR_SIZE));
+				*BitUtils::getPage(block, i) ^= ((std::size_t)1 << ((i + start_bit) % CHAR_SIZE));
 			else
-				*getPage(block, i) ^= ((std::size_t)1 >> ((i + start_bit) % CHAR_SIZE));
+				*BitUtils::getPage(block, i) ^= ((std::size_t)1 >> ((i + start_bit) % CHAR_SIZE));
 		}
 
 		/// <summary>
@@ -1060,9 +1036,9 @@ namespace BitUtils {
 		/// <param name="b">the boolean that reflects what to set the bit to (ie 1 for true and 0 for false).</param>
 		static void set(void* const src, std::size_t i, bool b) {
 			if constexpr (_BITUTILS_IS_LITTLE_ENDIAN)
-				*getPage(src, i) |= ((std::size_t)1 << ((i + start_bit) % CHAR_SIZE));
+				*BitUtils::getPage(src, i) |= ((std::size_t)1 << ((i + start_bit) % CHAR_SIZE));
 			else
-				*getPage(src, i) |= ((std::size_t)1 >> ((i + start_bit) % CHAR_SIZE));
+				*BitUtils::getPage(src, i) |= ((std::size_t)1 >> ((i + start_bit) % CHAR_SIZE));
 
 			// Flipping the bit if user wants it to be false
 			if (!b)
@@ -1460,7 +1436,7 @@ namespace BitUtils {
 			}
 			else { // unbounded
 				for (std::size_t i = 0; i < n; i += CHAR_SIZE) {
-					if (*getPage(block, i))
+					if (*BitUtils::getPage(block, i))
 						return true;
 				}
 				return false;
@@ -1518,7 +1494,7 @@ namespace BitUtils {
 			}
 			else { // unbounded
 				for (std::size_t i = 0; i < size; i++) {
-					if (*getPage(block, i * CHAR_SIZE) != (unsigned char)-1)
+					if (*BitUtils::getPage(block, i * CHAR_SIZE) != (unsigned char)-1)
 						return false;
 				}
 				return true;
@@ -1617,7 +1593,7 @@ namespace BitUtils {
 		>
 		static void for_each_byte(void* const block, const FF& func) {
 			for (std::size_t i = 0; i < size; i++) {
-				std::invoke(func, getPage(block, i * CHAR_SIZE));
+				std::invoke(func, BitUtils::getPage(block, i * CHAR_SIZE));
 			}
 		}
 
@@ -1627,7 +1603,7 @@ namespace BitUtils {
 		>
 		static void rfor_each_byte(void* const block, const FF& func) {
 			for (std::size_t i = size; i > 0; i--) {
-				std::invoke(func, getPage(block, (i - 1) * CHAR_SIZE));
+				std::invoke(func, BitUtils::getPage(block, (i - 1) * CHAR_SIZE));
 			}
 		}
 
@@ -1637,7 +1613,7 @@ namespace BitUtils {
 		>
 		static void for_each_byte(const void* const block, const FF& func) {
 			for (std::size_t i = 0; i < size; i++) {
-				std::invoke(func, getPage(block, i * CHAR_SIZE));
+				std::invoke(func, BitUtils::getPage(block, i * CHAR_SIZE));
 			}
 		}
 
@@ -1647,7 +1623,7 @@ namespace BitUtils {
 		>
 		static void rfor_each_byte(const void* const block, const FF& func) {
 			for (std::size_t i = size; i > 0; i--) {
-				std::invoke(func, getPage(block, (i - 1) * CHAR_SIZE));
+				std::invoke(func, BitUtils::getPage(block, (i - 1) * CHAR_SIZE));
 			}
 		}
 
@@ -1698,8 +1674,6 @@ namespace BitUtils {
 			return BitUtils<other_n, other_start_bit, other_end_bit>();
 		}
 	};
-#undef _BITUITLS_USE_SAFE_FUNCTIONS
-#undef _BITUITLS_USE_SAFE_FUNCTIONS2
 #undef _BITUTILS_MIN
 #endif // C++17
 #undef _BITUTILS_IS_LITTLE_ENDIAN

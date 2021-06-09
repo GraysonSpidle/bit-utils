@@ -965,41 +965,65 @@ void BitUtils::from_wstr(void* const block, const std::size_t n, const std::wstr
 	from_wstr(block, n, 0, n, s);
 }
 
-void BitUtils::for_each_byte(void* const begin, void* const end, void (*func)(unsigned char* pC)) {
-	for_each_page<unsigned char>(begin, end, func);
-}
-
-void BitUtils::for_each_byte(void* const begin, void* const end, std::function<void(unsigned char*)>& func) {
-	for_each_page<unsigned char>(begin, end, func);
-}
-
-void BitUtils::for_each_bit(const void* const begin, const void* const end, void (*func)(bool b)) {
+template < class UnaryFunction >
+void BitUtils::for_each_byte(void* const begin, void* const end, UnaryFunction f) {
 	bool reverse = begin > end;
 
-	for (char* it = (char*)(reverse ? end : begin); it != (reverse ? begin : end); it += reverse ? -1 : 1) {
-		for (char i = 0; i < CHAR_SIZE; i++) {
-			(*func)(get(it, 8, i));
-		}
+	for (unsigned char* it = (unsigned char*)(reverse ? end : begin); it != (reverse ? begin : end); it += reverse ? -1 : 1) {
+		f(reverse ? it - 1 : it);
 	}
-	if (reverse) {
-		for (char i = 0; i < CHAR_SIZE; i++) {
-			(*func)(get(begin, 8, i));
+}
+
+template < class UnaryFunction >
+void BitUtils::for_each_bit(const void* const begin, const void* const end, UnaryFunction f) {
+	bool reverse = begin > end;
+
+	for (unsigned char* it = (unsigned char*)(reverse ? end : begin); it != (reverse ? begin : end); it += reverse ? -1 : 1) {
+		for (unsigned char i = (reverse ? CHAR_SIZE : 0); (reverse ? i > 0 : i < CHAR_SIZE); i += reverse ? -1 : 1) {
+			f(get(it, CHAR_SIZE, (reverse ? i - 1 : i)));
 		}
 	}
 }
 
-void BitUtils::for_each_bit(const void* const begin, const void* const end, std::function<void(bool)>& func) {
-	bool reverse = begin > end;
+template<class UnaryFunction>
+void BitUtils::for_each_bit(
+	const void* const begin,
+	const std::size_t start_bit,
+	const void* const end,
+	const std::size_t end_bit,
+	UnaryFunction f
+) {
 
-	for (char* it = (char*)(reverse ? end : begin); it != (reverse ? begin : end); it += reverse ? -1 : 1) {
-		for (char i = 0; i < CHAR_SIZE; i++) {
-			func(get(it, 8, i));
-		}
-	}
-	if (reverse) {
-		for (char i = 0; i < CHAR_SIZE; i++) {
-			func(get(begin, 8, i));
-		}
+	// We are going to convert our parameters so we can represent this as one whole range (to make it easier to iterate over)
+	// We accomplish this through a formula I have derived:
+	// n = CHAR_SIZE * (real_end - real_begin) + real_end_bit - real_start_bit
+	// If in the case of a reverse iteration, then we just swap the values of between the start/begin and end values respectively.
+
+	auto real_begin = (unsigned char*)begin + (start_bit / CHAR_SIZE); 
+	auto real_start_bit = start_bit % CHAR_SIZE;
+	auto real_end = (unsigned char*)end + (end_bit / CHAR_SIZE);
+	auto real_end_bit = end_bit % CHAR_SIZE;
+
+	if (real_begin == real_end && real_start_bit == real_end_bit)
+		throw std::invalid_argument("start_bit refers to the same bit as end_bit, and that isn't allowed.");
+
+	bool reverse = real_begin > real_end;
+	auto n = CHAR_SIZE * (reverse ? real_begin - real_end : real_end - real_begin)
+		+ (reverse ? real_start_bit : real_end_bit)
+		- (reverse ? real_end_bit : real_start_bit);
+
+	// the bounds will be as follows:
+	// Not reverse: n, real_start_bit, real_start_bit + n
+	// Reverse:     n, real_end_bit, real_end_bit + n
+
+	for (std::size_t i = (reverse ? n : 0); (reverse ? i > 0 : i < n); i += (reverse ? -1 : 1)) {
+		f(get(
+			reverse ? real_end : real_begin,
+			n,
+			reverse ? real_end_bit : real_start_bit,
+			(reverse ? real_end_bit : real_start_bit) + n,
+			reverse ? i - 1 : i
+		));
 	}
 }
 

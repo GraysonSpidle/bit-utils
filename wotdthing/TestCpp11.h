@@ -18,9 +18,7 @@ namespace TestCpp11 {
 		*((unsigned char*)block) = 85;
 		*((unsigned char*)block + 1) = 85;
 #endif
-		// 01010101
-
-		assert(BitUtils::get(block, 1, 1, 2, 0) == true);
+		// 0101010101010101
 
 		for (std::size_t start = 0; start < 15; start++) {
 			for (std::size_t end = start + 1; end <= 16; end++) {

@@ -901,14 +901,14 @@ namespace BitUtils {
 #if __cplusplus >= 201700 // C++17
 	template <
 		const std::size_t _n,
-		const std::size_t start_bit = 0,
-		const std::size_t end_bit = _n,
+		const std::size_t _start_bit = 0,
+		const std::size_t _end_bit = _n,
 		std::enable_if_t <
 			(_n > 0) &&
-			(end_bit > 0) &&
-			(start_bit < _n) &&
-			(end_bit <= _n) &&
-			(start_bit < end_bit),
+			(_end_bit > 0) &&
+			(_start_bit < _n) &&
+			(_end_bit <= _n) &&
+			(_start_bit < _end_bit),
 			bool
 		> = true
 	>
@@ -942,10 +942,10 @@ namespace BitUtils {
 		}
 
 	public:
-		constexpr static const std::size_t n = end_bit - start_bit; // The number of bits we're working with.
+		constexpr static const std::size_t n = _end_bit - _start_bit; // The number of bits we're working with.
 		constexpr static const std::size_t size = floorlog2(_n); // The number of bytes that would be allocated.
-		constexpr static const std::size_t start_bit = start_bit; // The index of the bit to start on (inclusive).
-		constexpr static const std::size_t end_bit = end_bit; // The index of the bit to end on (exclusive).
+		constexpr static const std::size_t start_bit = _start_bit; // The index of the bit to start on (inclusive).
+		constexpr static const std::size_t end_bit = _end_bit; // The index of the bit to end on (exclusive).
 		constexpr static const bool is_bounded = start_bit != 0 || end_bit != _n;
 		constexpr static const bool is_soft_bounded = !is_bounded && size * CHAR_SIZE != _n;
 
@@ -1358,7 +1358,7 @@ namespace BitUtils {
 
 					constexpr std::size_t min_n = _BITUTILS_MIN(BitUtils_src::n, BitUtils_dst::n);
 
-					constexpr std::size_t i = (BitUtils_src::start_bit < BitUtils_dst::start_bit) ? min_n : 0;
+					std::size_t i = (BitUtils_src::start_bit < BitUtils_dst::start_bit) ? min_n : 0;
 					constexpr int step = (BitUtils_src::start_bit < BitUtils_dst::start_bit) ? -1 : 1;
 					
 					for (; (step < 0 ? i > 0 : i < min_n); i += step) {
@@ -1484,7 +1484,7 @@ namespace BitUtils {
 			}
 		}
 
-		static void all(const void* const block) {
+		static bool all(const void* const block) {
 			if constexpr (is_bounded) {
 				for (std::size_t i = 0; i < n; i++) {
 					if (!get(block, i))

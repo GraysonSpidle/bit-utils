@@ -7,9 +7,6 @@
 
 #include "BitUtils.h"
 #include "TestCpp11.h"
-#if __cplusplus >= 201700 // C++17
-#include "TestCpp17.h"
-#endif // C++17
 
 #ifdef CHAR_BIT
 constexpr const std::size_t CHAR_SIZE = CHAR_BIT;

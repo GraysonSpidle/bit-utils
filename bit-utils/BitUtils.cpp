@@ -1,7 +1,6 @@
 #include "BitUtils.h"
 
 #if __cplusplus >= 201100 // C++11
-
 #ifdef CHAR_BIT
 constexpr const std::size_t CHAR_SIZE = CHAR_BIT;
 #else
@@ -41,14 +40,6 @@ inline bool do_bounds_overlap(
 		return true;
 	return (unsigned char*)left + (left_end_bit - left_start_bit) >= right ||
 		(unsigned char*)right + (right_end_bit - right_start_bit) >= left;
-}
-
-inline bool use_safe_function(
-	const std::size_t n,
-	const std::size_t start_bit,
-	const std::size_t end_bit
-) {
-	return is_bounded(n, start_bit, end_bit) || is_soft_bounded(n, start_bit, end_bit);
 }
 
 std::size_t log2l(const std::size_t n) {
@@ -292,7 +283,7 @@ void BitUtils::copy(const void* const src,
 		return;
 	_validateBounds(n, start_bit, end_bit, 0);
 #if defined(__GNUG__) || defined(_CRT_SECURE_NO_WARNINGS) // if you're using gcc or don't want to use memcpy_s
-	memcpy(dst, src, size(src_n));
+	memcpy(dst, src, size(n));
 #else // if you're using vc++
 	memcpy_s(dst, size(n), src, size(n));
 #endif

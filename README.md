@@ -12,7 +12,7 @@ The C++17 version adds a generic class that aims to make the number of parameter
 IF YOU'RE USING VC++ THEN ADD THE COMPILE COMMAND LINE ARGUMENT `/Zc:__cplusplus`.
 
 While I do refer to a C++11 and C++17 version, that does not mean the C++11 version is inferior to its "newer" counterpart. In my opinion it's not really.
-If you don't want the C++17 stuff in there, then all you have to do is chuck any file into this https://regex101.com/r/4DdvON/1 and copy the substitution result. It's really that easy. Visual Studio sucks and it doesn't allow you to do multiline regex so this is the next best thing.
+If you don't want the C++17 stuff in there, then all you have to do is chuck any file into this https://regex101.com/r/4DdvON/2 and copy the substitution result. It's really that easy. Visual Studio sucks and it doesn't allow you to do multiline regex so this is the next best thing.
 
 The C++17 version isn't tested as extensively as the C++11 version because you need to know the size of stuff at compile time and I'm not about to enumerate every single permutation of bit arrays just to test it. 
 

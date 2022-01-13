@@ -24,15 +24,12 @@ void testCpp17();
 #endif // C++17
 
 int main(int argc, char * argv[]) {
-	testCpp11();
-	return 0;
-}
+	TestCpp11::test_everything();
 
-void printBarThing(std::size_t start_bit, std::size_t n) {
-	std::cout << std::setfill(' ') << std::setw(start_bit + 1);
-	std::cout << '_';
-	std::cout << std::setfill('_') << std::setw(n);
-	std::cout << " " << std::endl;
+	std::cout << "All good!" << std::endl;
+
+
+	return 0;
 }
 
 void testCpp11() {

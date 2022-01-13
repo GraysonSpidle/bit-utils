@@ -120,7 +120,8 @@ void* BitUtils::create(const std::size_t n) {
 inline std::size_t BitUtils::size(const std::size_t n) {
 	if (n <= CHAR_SIZE)
 		return 1;
-	return ((std::size_t)1 << log2l(n)) / CHAR_SIZE;
+	auto temp = (n / CHAR_SIZE) * CHAR_SIZE;
+	return (temp / CHAR_SIZE) + (temp < n);
 }
 
 std::size_t BitUtils::size(const std::size_t start_bit, const std::size_t end_bit) {
@@ -350,6 +351,41 @@ void BitUtils::bitwise_and(
 
 void BitUtils::bitwise_and(
 	const void* const left,
+	const std::size_t left_start_bit,
+	const std::size_t left_end_bit,
+	const bool right,
+	void* const dst,
+	const std::size_t dst_start_bit,
+	const std::size_t dst_end_bit
+) {
+	// I guess I should explain a little bit about what's going on.
+	/* So in the event that the user wants to do this function on the same memory block, but
+	* in different places, then we might have to do something special.
+	*
+	* IFF the destination range is behind the left or right range then we MUST do this in reverse
+	* or else we will get incorrect results.
+	*/
+
+	std::size_t i = 0;
+	int step = 1;
+	if (do_bounds_overlap(left, left_start_bit, left_end_bit, dst, dst_start_bit, dst_end_bit)) {
+		if (left_start_bit < dst_start_bit) {
+			i = left_end_bit - left_start_bit;
+			step = -1;
+		}
+	}
+	auto n = left_end_bit - left_start_bit;
+	for (; (step < 0 ? i > 0 : i < n); i += step) {
+		set(
+			dst, dst_start_bit, dst_end_bit,
+			(step < 0 ? i - 1 : i),
+			get(left, left_start_bit, left_end_bit, (step < 0 ? i - 1 : i)) & right
+		);
+	}
+}
+
+void BitUtils::bitwise_and(
+	const void* const left,
 	const void* const right,
 	void* const dst,
 	const std::size_t n
@@ -374,6 +410,15 @@ void BitUtils::bitwise_and(
 
 void BitUtils::bitwise_and(
 	const void* const left,
+	const bool right,
+	void* const dst,
+	const std::size_t n
+) {
+	bitwise_and(left, 0, n, right, dst, 0, n);
+}
+
+void BitUtils::bitwise_and(
+	const void* const left,
 	const void* const right,
 	void* const dst,
 	const std::size_t start_bit,
@@ -384,6 +429,16 @@ void BitUtils::bitwise_and(
 		right, start_bit, end_bit,
 		dst, start_bit, end_bit
 	);
+}
+
+void BitUtils::bitwise_and(
+	const void* const left,
+	const bool right,
+	void* const dst,
+	const std::size_t start_bit,
+	const std::size_t end_bit
+) {
+	bitwise_and(left, start_bit, end_bit, right, dst, start_bit, end_bit);
 }
 
 void BitUtils::bitwise_or(

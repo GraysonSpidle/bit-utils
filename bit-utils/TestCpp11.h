@@ -144,8 +144,6 @@ namespace TestCpp11 {
 		}
 
 		// 1111100000000000
-
-		free(block);
 	}
 	
 	void test_fill_s() {
@@ -537,7 +535,7 @@ namespace TestCpp11 {
 		// right: 0000001111100000
 		// dst:   0000001111110000
 
-		assert(BitUtils::compare(right, dst, 16, 5, 10) == 0);
+		assert(BitUtils::compare(right, dst, 5, 10) == 0);
 		assert(BitUtils::get(dst, 16, 11));
 
 		free(left);
@@ -766,7 +764,7 @@ namespace TestCpp11 {
 
 		// block: 0000000000000000
 
-		assert(!BitUtils::bool_op(block, 16, 0, 16));
+		assert(!BitUtils::bool_op(block, 0, 16));
 
 		BitUtils::fill(block, 0, 10, 1);
 
@@ -872,9 +870,9 @@ namespace TestCpp11 {
 
 		// block: 0001000001101101
 
-		assert(!BitUtils::bool_op(block, 16, 0, 3));
+		assert(!BitUtils::bool_op(block, 0, 3));
 		assert(BitUtils::get(block, 16, 3));
-		assert(!BitUtils::bool_op(block, 16, 4, 9));
+		assert(!BitUtils::bool_op(block, 4, 9));
 		for (std::size_t i = 9; i < 11; i++)
 			assert(BitUtils::get(block, 16, i));
 		assert(!BitUtils::get(block, 16, 11));
@@ -892,8 +890,18 @@ namespace TestCpp11 {
 		free(block);
 	}
 
+	void test_size() {
+		assert(BitUtils::size(1) == 1);
+		assert(BitUtils::size(15) == 2);
+		assert(BitUtils::size(16) == 2);
+		assert(BitUtils::size(24) == 3);
+		assert(BitUtils::size(25) == 4);
+
+	}
+
 	void test_everything() {
 		test_get();
+		test_size();
 		test_flip();
 		test_set();
 		test_fill();
